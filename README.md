@@ -1,7 +1,55 @@
-# Nexo · Clientes 3.6.0
+# Nexo · Clientes 3.7.0
 
 
-## Estado vigente 3.6 — 21/10/2026, Local
+## Estado vigente 3.7 — 21/10/2026, Local
+
+Preparación de la conexión oficial de Instagram, sin pedir al usuario que
+inicie sesión ahora. La cuenta remitente indicada es mila.content. Ajustes
+incorpora Conectar Instagram, cancelar/desconectar y Probar un mensaje con
+vista previa y confirmación. La integración avanzada por token se conserva
+plegada por compatibilidad; el flujo principal no pide copiar tokens.
+
+El servicio OAuth separado mantiene el app secret en el servidor, canjea el
+código en Meta y devuelve el permiso solo al escritorio que inició el flujo
+con una prueba de posesión. State, autorización y resultado son de un uso;
+se comprueban identidad, permisos, expiración y cancelación. El permiso se
+guarda con DPAPI en la cuenta local y no se expone en estado, navegador o URL.
+Al vencer se pausa la cola y se pide volver a autorizar.
+
+Las tandas oficiales revisan permiso de conversación ANTES de elegir el cupo
+y toman el resto disponible tanto local como compartido por cuenta. Exigen
+vista previa y confirmación de perfiles y mensajes; un cambio de destinatarios,
+cuenta o texto invalida la tanda. El test exige otro destinatario que haya
+escrito en las últimas 24h, confirmación y recibo de Meta; consume cupo y se
+registra en historial/Excel. Doble envío y respuesta incierta se bloquean.
+Preparar manual sigue disponible por separado.
+
+IMPORTANTE: aún no hay aplicación de Meta registrada, servicio HTTPS desplegado,
+cuenta real autorizada ni envío real validado. Sin configuración, la interfaz
+muestra Pendiente y no abre la autorización ni permite probar mensajes. Para
+activar más adelante, seguir INSTAGRAM-OFICIAL.md, también incluido en el
+portable junto al servicio listo para desplegar. No se desplegó ningún servicio,
+se creó ningún túnel ni se tocaron los ambientes compartidos. La incorporación
+futura del servicio a infraestructura/runbooks queda expresamente pendiente
+de elegir el host y dominio y registrar la app; no se modificaron los docs
+centrales ni su branch de otro trabajo.
+
+Validación Local: 78 tests aprobados; OAuth HTTP, pairing, denegación, caducidad,
+cuenta distinta, cancelación, datos públicos sin tokens, recuperación del permiso
+cifrado al reiniciar y prueba completa con proveedor simulado. Smoke HTTP de
+100 seleccionados: 99 contactos fríos omitidos y 1 permitido enviado por cola
+con recibo FICTICIO. UI: pendiente sin configuración y test con destinatario,
+texto explícitamente ficticio, confirmación y recibo simulado. No se usaron
+credenciales de Meta ni se enviaron mensajes reales.
+
+Branch codex/nexo-instagram-oficial, basada en la instalación estable local
+0971cea. Sin remoto configurado: commits locales, sin push/merge/limpieza de
+branches. Solo Local; no hay validación de Development/Producción aplicable
+a este app independiente. La búsqueda real de 100 y revisión actual de feeds
+siguen con el pendiente documentado en 3.6.
+
+
+## Estado anterior 3.6 — 21/10/2026, Local
 
 Se amplió la búsqueda que antes recorría 12 consultas sin páginas siguientes y
 solo devolvió 5 candidatos. Ahora distribuye consultas por ciudades, sigue el
@@ -449,3 +497,32 @@ el repo no tiene remoto ni flujo de deploy compartido para merge/push. Se conser
 la branch para revisión; no se eliminaron branches. Pendiente: completar búsqueda
 real de 100 y verificar feeds actuales; SMTP y envío desde Instagram del titular
 requieren su configuración y revisión de destinatarios/textos.
+
+
+### Cierre instalado 3.7 — 21/10/2026, Local
+
+78 tests aprobados y verificación de interfaz completa con proveedor ficticio.
+El cierre de QA confirmó 3 recibos simulados (prueba HTTP, tanda y prueba de UI),
+cupo3, Excel con102 filas y3 envíos, token no legible en estado/SQLite y
+desconexión que conserva los datos. Lector independiente XML verificó102 filas
+y3 entradas de historial en el archivo ficticio.
+
+Las dos instalaciones Desktop/Nexo y Programs/NexoClientes, el servicio de
+autorización separado y el ZIP3.7 del escritorio coinciden por hash con los
+archivos probados. Portable45 entradas, sin bases, archivos de configuración
+reales ni datos/credenciales de QA. El servicio no se inicia con Nexo.
+Health18761 confirmó3.7.0; la primera lectura inmediata fue anterior al arranque
+y la siguiente comprobó el servicio activo sin errores.
+
+Respaldo previo: retirados/official-370-20261021-165146. Comparación de bases en
+modo lectura:58 leads,1 evento,1 settings,0 programaciones,1 usuario y0 filas
+de credenciales, todos sin cambios frente al respaldo. No hay URL del servicio
+Instagram configurada en la cuenta real; la autorización sigue desactivada.
+
+Documentación: README.md, EMPEZA-ACA.txt e INSTAGRAM-OFICIAL.md (incluida como
+servicio-instagram/ACTIVAR-INSTAGRAM.md en ambas instalaciones y el portable).
+Pendientes reales: registrar/configurar la app en Meta, publicar el servicio
+HTTPS en un dominio elegido por el titular, configurar su URL pública, conceder
+permisos con cuenta profesional y hacer una prueba real con otro destinatario
+que haya iniciado la conversación. No se pidió iniciar sesión ahora ni se
+realizó ninguna de esas acciones externas. No se tocó infraestructura compartida.

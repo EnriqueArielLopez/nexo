@@ -27,7 +27,7 @@ export class Store {
  settings(){const r=this.db.prepare('SELECT data FROM settings WHERE id=1').get();return {...defaults,...(r?JSON.parse(r.data):{})};}
  saveSettings(v){
   const s={...this.settings()};
-  for(const k of ['offer','region','template','sender','model','graphVersion','cities','lastSeed','emailSubject','smtpHost','smtpUser','emailFrom','attachment'])if(k in v)s[k]=clean(v[k],k==='template'?2000:1000);
+  for(const k of ['offer','region','template','sender','model','graphVersion','cities','lastSeed','emailSubject','smtpHost','smtpUser','emailFrom','attachment','instagramSender'])if(k in v)s[k]=clean(v[k],k==='template'?2000:1000);
   if('smtpPort'in v){const n=Number(v.smtpPort);if(![25,465,587,2525].includes(n))throw Error('Puerto de email inválido (usá 465 o 587).');s.smtpPort=n;}
   for(const k of ['daily','monthly','emailDaily','emailMonthly'])if(k in v){const n=Number(v[k]);if(!Number.isInteger(n)||n<1||n>10000)throw Error('Elegí un cupo entre 1 y 10000.');s[k]=n;}
   if('countries'in v){if(!Array.isArray(v.countries)||!v.countries.length||v.countries.some(c=>!COUNTRIES.some(x=>x.code===c)))throw Error('Seleccioná al menos un país de la lista.');s.countries=[...new Set(v.countries)];}

@@ -1,4 +1,4 @@
-NEXO · CLIENTES 3.6.0
+NEXO · CLIENTES 3.7.0
 
 BUSCAR SIN API Y CONTINUAR SI EL BUSCADOR PIDE VERIFICACIÓN
 1. Entrá a Nexo. Pegá tu Instagram y elegí países y rubro en Filtros.
@@ -22,7 +22,7 @@ idioma, feed y oportunidad antes de contactar. La búsqueda no envía mensajes.
 Si no se identifica tu oferta, completá Qué ofrecés en Filtros.
 
 Datos: %LOCALAPPDATA%\NexoClientes\Datos. Se conservan cuentas y contactos.
-Para compartir usá Nexo-para-compartir-3.6.0.zip, no la carpeta Datos.
+Para compartir usá Nexo-para-compartir-3.7.0.zip, no la carpeta Datos.
 
 CATEGORÍA, LIMPIEZA Y CONTACTO
 - Filtros permite alta categoría (hoteles de 3 estrellas en adelante y señales
@@ -42,3 +42,20 @@ CATEGORÍA, LIMPIEZA Y CONTACTO
 - Excel contiene todos los resultados activos, no solo la tanda. Nexo actualiza
   Clientes.xlsx después de registrar un envío. Descargalo nuevamente para
   actualizar una copia descargada antes. Los enviados no vuelven como nuevos.
+
+INSTAGRAM OFICIAL: PREPARADO, PENDIENTE DE ACTIVAR
+En Ajustes > Conectar Instagram podés indicar mila.content como remitente.
+No hace falta iniciar sesión ahora. Antes del primer uso hay que registrar
+la aplicación de Nexo en Meta y configurar su servicio HTTPS. No alcanza solo
+con iniciar sesión. La pantalla informa si falta esa preparación inicial.
+
+Una vez activado, Conectar Instagram abre la autorización oficial y guarda
+el permiso cifrado en esta PC. Probar un mensaje permite revisar destinatario
+y texto antes de confirmar un único envío. Para probar como cliente, usá otra
+cuenta que primero escriba a mila.content. La API no habilita mensajes iniciales
+a todos los perfiles encontrados. Los cupos son internos, no garantizan que
+Instagram no aplique restricciones.
+
+El servicio y la guía para el responsable del programa están en
+servicio-instagram/ACTIVAR-INSTAGRAM.md. No compartas claves de Meta en el ZIP.
+No se inició sesión ni se enviaron mensajes reales durante esta preparación.
