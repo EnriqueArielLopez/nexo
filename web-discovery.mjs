@@ -51,7 +51,7 @@ const SECTOR_TERMS={
  'Hoteles':['hotel','hoteles','posada','hostal','resort','alojamiento','hoteleria'],
  'Hoteles boutique':['hotel boutique','boutique hotel','hoteleria boutique'],
  'Resorts':['resort'],'Posadas':['posada'],'Apart hoteles':['apart hotel','aparthotel'],'Hostales':['hostal','hostel'],
- 'Gastronomía':['restaurante','restaurant','gastronomia','gastronomico','parrilla','pizzeria','resto','cerveceria'],
+ 'Gastronomía':['restaurante','restaurant','gastronomia','gastronomico','parrilla','pizzeria','resto','cerveceria','restobar'],
  'Cafeterías':['cafeteria','cafe','coffee'],'Indumentaria':['indumentaria','ropa','moda','boutique','vestidos'],
  'Estética y belleza':['estetica','belleza','peluqueria','salon de belleza','spa','cosmetica'],
  'Gimnasios':['gimnasio','fitness','gym','crossfit'],'Inmobiliarias':['inmobiliaria','bienes raices','real estate'],
@@ -62,6 +62,9 @@ const countryAliases={AR:['argentina','🇦🇷','arg.'],BO:['bolivia','🇧🇴
 const escaped=v=>v.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
 const contains=(text,term)=>new RegExp('(?:^|[^a-z0-9])'+escaped(normalize(term))+'(?:$|[^a-z0-9])').test(normalize(text));
 const terms=s=>SECTOR_TERMS[s]||[s];
+// A province request includes its localities; a specific city stays specific.
+const regionalZones={AR:{tucuman:['Tucumán','San Miguel de Tucumán','Yerba Buena','Tafí Viejo','Tafí del Valle']}};
+const zonesFor=(city,code)=>regionalZones[code]?.[normalize(city)]||[city];
 export function matchGeography(text,settings){
  const location=normalize(text).replace(/"/g,' ').trim();
  const citiesByCountry={AR:['buenos aires','mar del plata','villa carlos paz','san carlos de bariloche','puerto iguazu'],UY:['montevideo','punta del este','colonia del sacramento'],ES:['madrid','barcelona','sevilla','valencia'],MX:['ciudad de mexico','cancun','aguascalientes','guadalajara'],CO:['bogota','medellin','cartagena de indias'],PE:['lima, peru','cusco','cuzco'],BO:['cochabamba','santa cruz de la sierra'],CL:['santiago de chile','vina del mar','puerto varas']};
@@ -76,7 +79,8 @@ export function matchGeography(text,settings){
  const inferred=COUNTRIES.filter(c=>[...(citiesByCountry[c.code]||[]),...(COUNTRY_CITIES[c.code]||[])].some(city=>!ambiguous.has(normalize(city))&&(atLocation(city)||location.split(/\s+/).length>=4&&contains(location,city))));
  const country=explicit.length?selected.find(c=>explicit.includes(c)):inferred.length===1?selected.find(c=>c.code===inferred[0].code):null;
  if(!country)return null;
- const cities=String(settings.cities||'').split(/[,;\n]+/).map(x=>x.trim()).filter(Boolean);const city=cities.find(c=>contains(text,c));
+ if(country.code==='AR'&&normalize(settings.cities).trim()==='tucuman'&&!contains(location,'Tucumán')&&['Catamarca','Salta','Jujuy','Santiago del Estero','Buenos Aires','Córdoba','Mendoza','La Rioja','San Juan','San Luis','Santa Fe','Entre Ríos','Corrientes','Misiones','Chaco','Formosa','Neuquén','Río Negro','Chubut','Santa Cruz','Tierra del Fuego','La Pampa'].some(p=>contains(location,p)))return null;
+ const cities=String(settings.cities||'').split(/[,;\n]+/).map(x=>x.trim()).filter(Boolean);const city=cities.flatMap(c=>zonesFor(c,country.code)).sort((a,b)=>b.length-a.length).find(c=>contains(text,c));
  if(cities.length&&!city)return null;return {country:country.name,city:city||(COUNTRY_CITIES[country.code]||[]).find(c=>contains(location,c))||''};
 }
 export function inferServices(text){
@@ -113,10 +117,12 @@ export function rejectionReason(result,settings,known=[]){
 export function queryPlan(settings){
  const countries=COUNTRIES.filter(c=>settings.countries.includes(c.code));const cities=String(settings.cities||'').split(/[,;\n]+/).map(x=>x.trim()).filter(Boolean);const plan=[];
  const variants=settings.businessTier==='premium'?['lujo','4 estrellas','3 estrellas','5 estrellas','boutique spa','luxury']:['','reservas','oficial','contacto'];
- for(const variant of variants){const maxZones=Math.max(...countries.map(c=>cities.length||((COUNTRY_CITIES[c.code]||[]).length+1)));
-  for(let zone=0;zone<maxZones;zone++)for(const country of countries){const zones=cities.length?cities:['',...(COUNTRY_CITIES[country.code]||[])];if(zone>=zones.length)continue;const city=zones[zone];const q=`site:instagram.com ${terms(settings.segment)[0]} ${variant} "${city||country.name}"${cities.length?' "'+country.name+'"':''}`.replace(/\s+/g,' ').trim();plan.push({q,country:country.name,city});}
+ const countryZones=c=>cities.length?[...new Set(cities.flatMap(city=>zonesFor(city,c.code)))]:['',...(COUNTRY_CITIES[c.code]||[])];
+ // Interleave locations and countries before synonyms so a broad search keeps coverage.
+ for(const variant of variants)for(const term of terms(settings.segment)){const maxZones=Math.max(0,...countries.map(c=>countryZones(c).length));
+  for(let zone=0;zone<maxZones;zone++)for(const country of countries){const zones=countryZones(country);if(zone>=zones.length)continue;const city=zones[zone];const region=cities.find(c=>regionalZones[country.code]?.[normalize(c)]?.includes(city));const q=`site:instagram.com ${term} ${variant} ${city||country.name}${region&&normalize(city)!==normalize(region)?' '+region:''}${variant&&cities.length?' '+country.name:''}`.replace(/\s+/g,' ').trim();plan.push({q,country:country.name,city});}
  }
- const mixed=[];for(const p of plan){mixed.push({...p,q:p.q+' -inurl:reel -inurl:/p/ -inurl:explore'});if(settings.businessTier==='premium'&&settings.segment.includes('Hotel'))mixed.push({...p,q:p.q.replace('site:instagram.com ','')+' Instagram'});}return mixed.slice(0,180);
+ const mixed=[];for(const p of plan){mixed.push(p);if(settings.businessTier==='premium'&&settings.segment.includes('Hotel'))mixed.push({...p,q:p.q.replace('site:instagram.com ','')+' Instagram'});}return mixed.slice(0,180);
 }
 export class PublicWebDiscovery {
  constructor({read=fetchPublic,delayMs=5000,signal}={}){this.read=read;this.delayMs=delayMs;this.signal=signal;this.calls=0;this.lastSearch=0;this.websiteCache=new Map();}
@@ -159,6 +165,6 @@ export async function discoverWeb({store,seed,web=new PublicWebDiscovery(),progr
   state.status=cancelled()?'paused':'completed';state.stage=cancelled()?'Búsqueda detenida':`${state.found} candidatos encontrados en la web`;
  }catch(e){state.status=cancelled()?'paused':'failed';state.error=cancelled()?'':e.message;state.stage=cancelled()?'Búsqueda detenida':'La búsqueda se detuvo; se conservaron los candidatos encontrados.';}
  state.outcome=state.found>=state.target?'target-reached':'partial';
- state.summary=`${state.found}/${state.target} candidatos · ${state.queries} consultas · ${state.pages} páginas · ${state.scanned} resultados examinados. ${state.rejected.duplicates||0} repetidos; ${state.rejected.location||0} sin ubicación coincidente; ${state.rejected.category||0} sin señales de alta categoría; ${state.rejected.directory||0} directorios descartados. Actividad, encaje y capacidad de pago requieren revisión. ${state.found<state.target?'Objetivo incompleto: no se inventaron contactos.':''}`;
+ state.summary=`${state.found}/${state.target} candidatos · ${state.queries} consultas · ${state.pages} páginas · ${state.scanned} resultados examinados. ${state.rejected.duplicates||0} repetidos; ${state.rejected.location||0} sin ubicación coincidente; ${state.rejected.sector||0} sin rubro coincidente; ${state.rejected.category||0} sin señales de alta categoría; ${state.rejected.directory||0} directorios descartados. Actividad, encaje y capacidad de pago requieren revisión. ${state.found<state.target?'Objetivo incompleto: no se inventaron contactos.':''}`;
  state.usage={webRequests:web.calls,paidApiCalls:0};emit();store.setJob('lastSearch',{...state,seed,at:new Date().toISOString()});return state;
 }

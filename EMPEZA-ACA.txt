@@ -1,4 +1,4 @@
-NEXO · CLIENTES 3.7.0
+NEXO · CLIENTES 3.7.1
 
 BUSCAR SIN API Y CONTINUAR SI EL BUSCADOR PIDE VERIFICACIÓN
 1. Entrá a Nexo. Pegá tu Instagram y elegí países y rubro en Filtros.
@@ -22,7 +22,7 @@ idioma, feed y oportunidad antes de contactar. La búsqueda no envía mensajes.
 Si no se identifica tu oferta, completá Qué ofrecés en Filtros.
 
 Datos: %LOCALAPPDATA%\NexoClientes\Datos. Se conservan cuentas y contactos.
-Para compartir usá Nexo-para-compartir-3.7.0.zip, no la carpeta Datos.
+Para compartir usá Nexo-para-compartir-3.7.1.zip, no la carpeta Datos.
 
 CATEGORÍA, LIMPIEZA Y CONTACTO
 - Filtros permite alta categoría (hoteles de 3 estrellas en adelante y señales

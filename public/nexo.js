@@ -3,7 +3,7 @@ const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const norm=v=>String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
 let csrf,state,registerMode=false,countries=['AR','UY','ES'],draft=new Set(),view='all',selected=new Set(),activeLead=null,polling=false,toastTimer,searchAfterConnect=false,assistantLogKey='';
-const PAGE_BUILD='3.7.0';
+const PAGE_BUILD='3.7.1';
 let sounds=localStorage.getItem('nexo-sounds')==='true';
 function beep(){if(!sounds)return;try{const ctx=new AudioContext(),o=ctx.createOscillator(),g=ctx.createGain();o.connect(g);g.connect(ctx.destination);o.frequency.value=660;g.gain.setValueAtTime(.025,ctx.currentTime);g.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+.2);o.start();o.stop(ctx.currentTime+.2);setTimeout(()=>ctx.close(),300);}catch{}}
 function toast(msg,error=false){$('#toast').textContent=msg;$('#toast').classList.toggle('error',error);$('#toast').hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('#toast').hidden=true,error?12000:6500);if(!error)beep();}

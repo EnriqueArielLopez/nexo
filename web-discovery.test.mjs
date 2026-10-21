@@ -32,7 +32,20 @@ test('la oferta se identifica en biografía pública y no se deduce solo por ten
  const explicit=await empty.profile(settings.lastSeed,{offer:'Venta de software'});assert.equal(explicit.services,'Venta de software');assert.equal(empty.calls,1);
 });
 test('cada consulta conserva países y ciudades; no expande la ubicación al no encontrar',()=>{
- const plan=queryPlan({...settings,cities:'Salta; Jujuy',countries:['AR','UY']});assert.equal(plan.length,16);assert.ok(plan.every(p=>p.q.includes('site:instagram.com')&&/Salta|Jujuy/.test(p.q)&&/Argentina|Uruguay/.test(p.q)));
+ const plan=queryPlan({...settings,cities:'Salta; Jujuy',countries:['AR','UY']});assert.ok(plan.length>16&&plan.length<=180);assert.ok(plan.every(p=>p.q.includes('site:instagram.com')&&/Salta|Jujuy/.test(p.q)&&['Argentina','Uruguay'].includes(p.country)));
+});
+
+test('Tucumán reconoce provincia y localidades sin inventar país ni ampliar una ciudad específica',()=>{
+ const s={...settings,cities:'Tucuman',segment:'Gastronomía',businessTier:'all'};
+ for(const location of ['Tucumán','San Miguel de Tucumán','Yerba Buena','Tafí Viejo','Tafí del Valle']){
+  const r={...result('resto_tucuman_qa'),title:'Parrilla QA',snippet:`Parrilla en ${location}. Menú y pedidos por WhatsApp.`};
+  const lead=webCandidate(r,s,profile);assert.ok(lead,location);assert.equal(lead.country,'Argentina');
+ }
+ for(const text of ['Parrilla en Salta, Argentina.','Parrilla en Tucumán, Uruguay.','Parrilla en San Miguel.','Parrilla en Concepción, Chile.','Parrilla en Yerba Buena, Catamarca, Argentina.'])assert.equal(matchGeography(text,s),null,text);
+ assert.equal(matchGeography('Parrilla en Yerba Buena, Tucumán.',{...s,cities:'San Miguel de Tucumán'}),null);
+ const plan=queryPlan(s);assert.equal(plan.length,180);
+ for(const term of ['restaurante','parrilla','resto','cerveceria','pizzeria'])assert.ok(plan.some(p=>p.q.includes(` ${term} `)),term);
+ assert.ok(plan.every(p=>p.country==='Argentina'&&/Tucumán|Yerba Buena|Tafí/.test(p.q)&&!p.q.includes('-inurl:')));
 });
 test('direcciones privadas y metadatos no se consideran sitios públicos',()=>{
  for(const ip of ['127.0.0.1','10.1.2.3','172.16.0.1','192.168.1.1','169.254.169.254','::1','::ffff:127.0.0.1','fe80::1','fd00::1'])assert.equal(isPublicAddress(ip),false,ip);

@@ -1,6 +1,6 @@
 export const COUNTRY_CITIES={
  ES:['Madrid','Barcelona','Marbella','Málaga','Sevilla','Valencia','Granada','Alicante','Benidorm','Palma de Mallorca','Ibiza','San Sebastián','Bilbao','Santander','Salamanca','Toledo','Segovia','Cádiz','Estepona','Ronda','Sitges','Girona','Tarragona','Lanzarote','Tenerife','Costa Adeje','Gran Canaria','Las Palmas','Oviedo','Gijón','Burgos','Valladolid','Almería','Murcia','Jerez de la Frontera','Puerto de la Cruz','Torremolinos','Nerja','León','Santiago de Compostela'],
- AR:['Buenos Aires','Mar del Plata','Mendoza','San Carlos de Bariloche','Puerto Iguazú','Ushuaia','El Calafate','Villa Carlos Paz','Salta','San Martín de los Andes','Villa La Angostura','Pinamar','Cariló','San Rafael'],
+ AR:['Buenos Aires','Mar del Plata','Mendoza','San Carlos de Bariloche','Puerto Iguazú','Ushuaia','El Calafate','Villa Carlos Paz','Salta','San Martín de los Andes','Villa La Angostura','Pinamar','Cariló','San Rafael','Tucumán','San Miguel de Tucumán','Yerba Buena','Tafí Viejo','Tafí del Valle'],
  UY:['Montevideo','Punta del Este','Colonia del Sacramento','Piriápolis','José Ignacio'],
  CL:['Santiago de Chile','Viña del Mar','Puerto Varas','San Pedro de Atacama','Pucón'],
  CO:['Bogotá','Medellín','Cartagena de Indias','Barranquilla','Pereira','Manizales'],

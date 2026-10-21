@@ -1,4 +1,4 @@
-# Nexo · Clientes 3.7.0
+# Nexo · Clientes 3.7.1
 
 
 ## Estado vigente 3.7 — 21/10/2026, Local
@@ -526,3 +526,44 @@ HTTPS en un dominio elegido por el titular, configurar su URL pública, conceder
 permisos con cuenta profesional y hacer una prueba real con otro destinatario
 que haya iniciado la conversación. No se pidió iniciar sesión ahora ni se
 realizó ninguna de esas acciones externas. No se tocó infraestructura compartida.
+
+### Corrección Tucumán 3.7.1 — 21/10/2026, Local
+
+Diagnóstico de la búsqueda real guardada: Argentina, Tucuman, Gastronomía,
+categoría todas. Solo 4 consultas, 6 páginas, 5 perfiles examinados, 3 descartados
+por ubicación y 2 por rubro. No intervino el filtro de hoteles premium.
+
+Se incorporó Tucumán al reconocimiento geográfico y se incluyeron sus localidades
+San Miguel de Tucumán, Yerba Buena, Tafí Viejo y Tafí del Valle al pedir la provincia.
+Las ciudades específicas mantienen su alcance. Se rechazan países incompatibles
+y menciones de Yerba Buena en otra provincia. Se diversifican los términos del
+rubro (incluido restobar), hasta 180 consultas, y se eliminan las comillas y
+exclusiones inurl que en la prueba pública reducían los resultados a ubicaciones,
+publicaciones y perfiles de otros rubros. Los filtros se comprueban en la evidencia,
+no se confía en que el buscador los aplique. El resumen incluye rechazos por rubro.
+
+Prueba pública comparativa: 10 consultas anteriores ampliadas pero con sintaxis
+restrictiva, 0 candidatos; 4 consultas simples, 40 resultados examinados y 6 cuentas
+válidas distintas (54restaurante, eljockeyresto, elsantuariotucuman, jbgtucuman,
+arsucerveceria, tbc.barrionorte). Evidencia en qa/tucuman-simple-371.json, fuera de Git.
+Estos perfiles son candidatos; no se verificaron actividad actual ni capacidad de pago.
+No se probó completar 100 resultados reales. La prueba no modificó la base real.
+
+Instagram: 79 tests aprobados; pruebas HTTP locales con proveedor ficticio verifican
+OAuth, protección de credenciales, rechazo del autoenvío y contacto frío, vista
+previa, confirmación, recibo, cupo, historial, Excel y bloqueo de repetición; tanda
+con 100 seleccionados y solo 1 permitido. Cero mensajes externos. Meta sigue sin
+configuración/autorización real y no se puede declarar operativo el envío real.
+La vía oficial requiere conversación iniciada por el destinatario; no habilita
+prospección por DM frío. No se pidió login, no se desplegó servicio HTTPS.
+
+Branch local codex/nexo-tucuman; sin remoto ni main en este repositorio. No se
+modificó infraestructura compartida ni Development/Producción.
+
+Cierre instalado: ambas copias y ZIP 3.7.1 verificados por hash contra el portable.
+Health local 18761 confirmó 3.7.1. Respaldo retirados/tucuman-371-20261021-174405.
+Comparación de tablas en modo lectura: 161 leads, 1 evento, 1 settings, 0 schedules,
+1 usuario y 0 credenciales, idénticos al respaldo. Servicio Instagram sin configurar.
+Pruebas aisladas cerradas; no se incorporaron cuentas ni envíos ficticios a los datos
+reales. Docs actualizadas README.md y versión/ZIP en EMPEZA-ACA.txt. Se conserva
+la branch de trabajo; no hay remoto para push ni merge a main en este repo local.
