@@ -1,4 +1,65 @@
-# Nexo · Clientes 3.3.3
+# Nexo · Clientes 3.4.0
+
+## Estado vigente 3.4 — 21/10/2026, Local
+
+La búsqueda principal ahora es **web pública directa, sin API ni Claude**.
+Completar Instagram, países y Filtros; pulsar Buscar 100 clientes. Nexo consulta
+las páginas HTML públicas de DuckDuckGo, identifica perfiles exactos de Instagram,
+filtra por palabras del rubro y ubicación en el texto, elimina duplicados y guarda
+los resultados en SQLite/Excel. El perfil del proveedor se consulta en el índice
+público para identificar servicios con reglas locales. Si no se identifican,
+completar Qué ofrecés. No se usa una sesión privada de Instagram ni se leen
+seguidores, historias o contenido protegido. Claude/API queda como opción separada.
+
+`web-discovery.mjs` implementa el recorrido. Hasta 72 consultas con al menos
+5 segundos entre consultas por búsqueda, límite de 100 altas, timeouts, control
+de tamaño/respuesta, redirecciones a sitios públicos, cancelación y guardado
+parcial. No evade CAPTCHA ni bloqueos: se detiene y explica el límite.
+Los resultados y el historial existentes se conservan. La pestaña inicial es
+Todos para que los candidatos Por verificar sean visibles al abrir la app.
+
+La afinidad es una regla local por coincidencias de rubro, ubicación y señales
+comerciales en texto indexado. No es análisis semántico completo de IA ni prueba
+de intención de compra. No se confirma actividad actual desde un snippet.
+El feed siempre queda sin verificar en este recorrido; no se inventan fechas,
+carencias, seguidores, emails ni prioridad verificada. Los candidatos requieren
+revisión explícita antes de contactar. País en el nombre de un negocio no se
+considera ubicación; se usa la biografía, marcadores de ubicación o un conjunto
+limitado de ciudades reconocidas. Ubicaciones ambiguas se descartan.
+
+Validación: 49 pruebas Node (incluye 100 candidatos simulados, filtros, fuentes,
+cancelación, duplicados, oferta, direcciones privadas y bloqueo), 9 pruebas C#
+del lanzador. Smoke HTTP completo sin conexión Claude: 100 candidatos ficticios,
+cero mensajes/historial de envío y cero llamadas a API paga. UI local: Buscar
+inicia directamente, muestra progreso y los resultados sin pedir conexión.
+
+Prueba real de web: se pudo identificar mila.content como Community Manager y
+Content Creator. DuckDuckGo solicitó una verificación humana tras pocas consultas;
+no se validó obtener 100 contactos reales. La primera prueba además detectó
+homónimos (hotel llamado Argentina en otros países); se endureció geografía y
+se agregaron casos de regresión antes de distribuir. Los datos de esa prueba
+quedaron aislados en qa y no se incorporaron a la cuenta del usuario.
+La lectura de una página pública previamente obtenida produjo un candidato con
+Instagram, rubro y ubicación coincidentes. No se presenta esto como validación
+de 100 contactos reales ni de actividad comercial actual.
+
+Incluye el arreglo del lanzador: reconoce health JSON `app=nexo, ok=true` sin
+exigir una versión fija. El código previo exigía 3.2.0 y fallaba con 3.3.3.
+Instalación 3.4.0 aplicada en `Desktop/Nexo` y
+`AppData/Local/Programs/NexoClientes`, con ejecutables y módulos verificados por
+hash. Servicio, HTML y JavaScript reales comprobados en puerto 18761. Nexo quedó
+abierto con el servidor de la copia del escritorio. El ZIP limpio tiene 35
+entradas e incluye `web-discovery.mjs`, sin SQLite, secretos ni fixtures.
+ZIP nuevo: `Desktop/Nexo-para-compartir-3.4.0.zip`. Los anteriores se conservan.
+Respaldo de ambos programas: `retirados/web-340-20261021-135445` (`copia-0`:
+escritorio, `copia-1`: Programs). Para rollback, cerrar Nexo y restaurar `app`,
+`Nexo.exe` y `EMPEZA-ACA.txt` de cada copia. No restaurar SQLite: no hubo cambios
+de schema. Cuentas, contactos, filtros y conexiones permanecieron intactos.
+La instancia QA del puerto 18768 se cerró. El código y esta documentación se
+guardan en la branch local `codex/nexo-busqueda-web-sin-api`; no hay remoto ni
+entornos Development/Producción para esta app independiente.
+
+Este estado 3.4 y EMPEZA-ACA.txt prevalecen sobre el historial siguiente.
 
 ## Estado vigente — 21/10/2026, Local
 
