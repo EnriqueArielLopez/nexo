@@ -21,7 +21,7 @@ import {exportWorkbook} from './export-portable.mjs';
 import {NexoAssistant,campaignContext,connectionRequest} from './assistant.mjs';
 import {emailLead,sendMail,attachmentDir,ATTACHMENT_TYPES} from './mailer.mjs';
 import {runSchedules} from './scheduler.mjs';
-const BUILD='3.7.1';
+const BUILD='3.7.2';
 const root=path.dirname(fileURLToPath(import.meta.url));
 const data=path.resolve(process.env.HOTEL_DATA_DIR||path.join(root,'data'));
 const port=Number(process.env.PORT||18761),origin=`http://127.0.0.1:${port}`;

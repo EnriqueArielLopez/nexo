@@ -12,7 +12,7 @@ export const normalize=v=>String(v||'').normalize('NFD').replace(/[\u0300-\u036f
 export function decodeHtml(value){return String(value||'').replace(/&#(x[\da-f]+|\d+);/gi,(_,v)=>{const n=v[0].toLowerCase()==='x'?parseInt(v.slice(1),16):Number(v);return n>0&&n<=0x10ffff?String.fromCodePoint(n):'';}).replace(/&(?:amp|quot|apos|lt|gt|nbsp);/g,m=>({'&amp;':'&','&quot;':'"','&apos;':"'",'&lt;':'<','&gt;':'>','&nbsp;':' '})[m]);}
 export function plainText(value){return decodeHtml(String(value||'').replace(/<(script|style|noscript)\b[^>]*>[\s\S]*?<\/\1>/gi,' ').replace(/<[^>]+>/g,' ')).replace(/\s+/g,' ').trim();}
 const attributes=tag=>Object.fromEntries([...tag.matchAll(/([\w:-]+)\s*=\s*(?:"([^"]*)"|'([^']*)')/g)].map(m=>[m[1].toLowerCase(),decodeHtml(m[2]??m[3])]));
-export function instagramHandle(url){try{const u=new URL(url);if(!['instagram.com','www.instagram.com'].includes(u.hostname))return '';return handle(u.href);}catch{return '';}}
+export function instagramHandle(url){try{const u=new URL(url);if(!['instagram.com','www.instagram.com'].includes(u.hostname))return '';const parts=u.pathname.split('/').filter(Boolean);if(parts.length===2&&['reels','tagged'].includes(parts[1]))u.pathname='/'+parts[0]+'/';return handle(u.href);}catch{return '';}}
 export function parseSearchResults(html){
  const output=[];
  for(const part of html.split(/<a\b(?=[^>]*\bclass=["'][^"']*\bresult__a\b)/i).slice(1)){
@@ -51,7 +51,7 @@ const SECTOR_TERMS={
  'Hoteles':['hotel','hoteles','posada','hostal','resort','alojamiento','hoteleria'],
  'Hoteles boutique':['hotel boutique','boutique hotel','hoteleria boutique'],
  'Resorts':['resort'],'Posadas':['posada'],'Apart hoteles':['apart hotel','aparthotel'],'Hostales':['hostal','hostel'],
- 'Gastronomía':['restaurante','restaurant','gastronomia','gastronomico','parrilla','pizzeria','resto','cerveceria','restobar'],
+ 'Gastronomía':['restaurante','parrilla','resto','cerveceria','pizzeria','restobar','bodegon','sangucheria','bar','parrillada','gastronomia','restaurant','gastronomico'],
  'Cafeterías':['cafeteria','cafe','coffee'],'Indumentaria':['indumentaria','ropa','moda','boutique','vestidos'],
  'Estética y belleza':['estetica','belleza','peluqueria','salon de belleza','spa','cosmetica'],
  'Gimnasios':['gimnasio','fitness','gym','crossfit'],'Inmobiliarias':['inmobiliaria','bienes raices','real estate'],
@@ -66,7 +66,8 @@ const terms=s=>SECTOR_TERMS[s]||[s];
 const regionalZones={AR:{tucuman:['Tucumán','San Miguel de Tucumán','Yerba Buena','Tafí Viejo','Tafí del Valle']}};
 const zonesFor=(city,code)=>regionalZones[code]?.[normalize(city)]||[city];
 export function matchGeography(text,settings){
- const location=normalize(text).replace(/"/g,' ').trim();
+ // Handles, hashtags and URLs are identities/topics, not proof of location.
+ const location=normalize(text).replace(/https?:\/\/\S+|[@#][a-z0-9._]+/g,' ').replace(/"/g,' ').trim();
  const citiesByCountry={AR:['buenos aires','mar del plata','villa carlos paz','san carlos de bariloche','puerto iguazu'],UY:['montevideo','punta del este','colonia del sacramento'],ES:['madrid','barcelona','sevilla','valencia'],MX:['ciudad de mexico','cancun','aguascalientes','guadalajara'],CO:['bogota','medellin','cartagena de indias'],PE:['lima, peru','cusco','cuzco'],BO:['cochabamba','santa cruz de la sierra'],CL:['santiago de chile','vina del mar','puerto varas']};
  const hasCountry=c=>(countryAliases[c.code]||[c.name]).some(t=>{
   if(/[^\x00-\x7f]/.test(t)&&t.includes('🇦'))return location.includes(t);
@@ -79,8 +80,11 @@ export function matchGeography(text,settings){
  const inferred=COUNTRIES.filter(c=>[...(citiesByCountry[c.code]||[]),...(COUNTRY_CITIES[c.code]||[])].some(city=>!ambiguous.has(normalize(city))&&(atLocation(city)||location.split(/\s+/).length>=4&&contains(location,city))));
  const country=explicit.length?selected.find(c=>explicit.includes(c)):inferred.length===1?selected.find(c=>c.code===inferred[0].code):null;
  if(!country)return null;
- if(country.code==='AR'&&normalize(settings.cities).trim()==='tucuman'&&!contains(location,'Tucumán')&&['Catamarca','Salta','Jujuy','Santiago del Estero','Buenos Aires','Córdoba','Mendoza','La Rioja','San Juan','San Luis','Santa Fe','Entre Ríos','Corrientes','Misiones','Chaco','Formosa','Neuquén','Río Negro','Chubut','Santa Cruz','Tierra del Fuego','La Pampa'].some(p=>contains(location,p)))return null;
- const cities=String(settings.cities||'').split(/[,;\n]+/).map(x=>x.trim()).filter(Boolean);const city=cities.flatMap(c=>zonesFor(c,country.code)).sort((a,b)=>b.length-a.length).find(c=>contains(text,c));
+ if(country.code==='AR'&&normalize(settings.cities).trim()==='tucuman'){
+  if(['CABA','Capital Federal','Ciudad Autónoma de Buenos Aires'].some(p=>contains(location,p)))return null;
+  if(!contains(location,'Tucumán')&&['Catamarca','Salta','Jujuy','Santiago del Estero','Buenos Aires','Córdoba','Mendoza','La Rioja','San Juan','San Luis','Santa Fe','Entre Ríos','Corrientes','Misiones','Chaco','Formosa','Neuquén','Río Negro','Chubut','Santa Cruz','Tierra del Fuego','La Pampa'].some(p=>contains(location,p)&&!new RegExp(escaped(normalize(p))+'\\s+\\d').test(location)))return null;
+ }
+ const cities=String(settings.cities||'').split(/[,;\n]+/).map(x=>x.trim()).filter(Boolean);const city=cities.flatMap(c=>zonesFor(c,country.code)).sort((a,b)=>b.length-a.length).find(c=>contains(location,c));
  if(cities.length&&!city)return null;return {country:country.name,city:city||(COUNTRY_CITIES[country.code]||[]).find(c=>contains(location,c))||''};
 }
 export function inferServices(text){
@@ -118,9 +122,10 @@ export function queryPlan(settings){
  const countries=COUNTRIES.filter(c=>settings.countries.includes(c.code));const cities=String(settings.cities||'').split(/[,;\n]+/).map(x=>x.trim()).filter(Boolean);const plan=[];
  const variants=settings.businessTier==='premium'?['lujo','4 estrellas','3 estrellas','5 estrellas','boutique spa','luxury']:['','reservas','oficial','contacto'];
  const countryZones=c=>cities.length?[...new Set(cities.flatMap(city=>zonesFor(city,c.code)))]:['',...(COUNTRY_CITIES[c.code]||[])];
- // Interleave locations and countries before synonyms so a broad search keeps coverage.
- for(const variant of variants)for(const term of terms(settings.segment)){const maxZones=Math.max(0,...countries.map(c=>countryZones(c).length));
-  for(let zone=0;zone<maxZones;zone++)for(const country of countries){const zones=countryZones(country);if(zone>=zones.length)continue;const city=zones[zone];const region=cities.find(c=>regionalZones[country.code]?.[normalize(c)]?.includes(city));const q=`site:instagram.com ${term} ${variant} ${city||country.name}${region&&normalize(city)!==normalize(region)?' '+region:''}${variant&&cities.length?' '+country.name:''}`.replace(/\s+/g,' ').trim();plan.push({q,country:country.name,city});}
+ // Try different business types early instead of repeating restaurante/restaurant.
+ for(const variant of variants){const maxZones=Math.max(0,...countries.map(c=>countryZones(c).length));
+  const pairs=Array.from({length:maxZones},(_,zone)=>terms(settings.segment).map((term,index)=>({zone,term,index}))).flat();if(!cities.length)pairs.sort((a,b)=>a.index-b.index||a.zone-b.zone);
+  for(const {zone,term} of pairs)for(const country of countries){const zones=countryZones(country);if(zone>=zones.length)continue;const city=zones[zone];const region=cities.find(c=>regionalZones[country.code]?.[normalize(c)]?.includes(city));const q=`site:instagram.com ${term} ${variant} ${city||country.name}${region&&normalize(city)!==normalize(region)?' '+region:''}${variant&&cities.length?' '+country.name:''}`.replace(/\s+/g,' ').trim();plan.push({q,country:country.name,city});}
  }
  const mixed=[];for(const p of plan){mixed.push(p);if(settings.businessTier==='premium'&&settings.segment.includes('Hotel'))mixed.push({...p,q:p.q.replace('site:instagram.com ','')+' Instagram'});}return mixed.slice(0,180);
 }

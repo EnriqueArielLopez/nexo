@@ -4,7 +4,7 @@ import {mkdtempSync,rmSync} from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import {Store} from './core.mjs';
-import {parseSearchResults,webCandidate,queryPlan,matchGeography,inferServices,isPublicAddress,PublicWebDiscovery,discoverWeb} from './web-discovery.mjs';
+import {parseSearchResults,webCandidate,queryPlan,matchGeography,inferServices,isPublicAddress,PublicWebDiscovery,discoverWeb,instagramHandle} from './web-discovery.mjs';
 const settings={lastSeed:'https://www.instagram.com/proveedor_qa/',segment:'Hoteles',countries:['AR'],cities:'Salta',offer:'Creación de contenido',sender:'Marca QA',maxResults:100};
 const profile={services:'creación de contenido y fotografía'};
 const result=(h='hotel_qa')=>({url:'https://www.instagram.com/'+h+'/',title:'Hotel QA (@'+h+') - Instagram',snippet:'Hotel en Salta, Argentina. Reservas por WhatsApp. Habitaciones y spa.'});
@@ -46,6 +46,20 @@ test('Tucumán reconoce provincia y localidades sin inventar país ni ampliar un
  const plan=queryPlan(s);assert.equal(plan.length,180);
  for(const term of ['restaurante','parrilla','resto','cerveceria','pizzeria'])assert.ok(plan.some(p=>p.q.includes(` ${term} `)),term);
  assert.ok(plan.every(p=>p.country==='Argentina'&&/Tucumán|Yerba Buena|Tafí/.test(p.q)&&!p.q.includes('-inurl:')));
+});
+
+test('los descartes reales de Tucumán no confunden menciones, hashtags ni una calle de CABA con la provincia',()=>{
+ const s={...settings,cities:'Tucuman',segment:'Gastronomía',businessTier:'all'};
+ for(const text of ['Restaurante de carnes. Av. Perón 2300, YB. Local 6 @alterpoint_tucuman','Cenas show. Tucumán y Talcahuano, CABA. Frente al Teatro Colón.','Restó en Salta. #tucuman','Restaurante https://tucuman.example.com'])assert.equal(matchGeography(text,s),null,text);
+ assert.ok(matchGeography('Parrilla en Tucumán, San Juan 875.',s));
+ assert.ok(matchGeography('Parrilla en Yerba Buena, San Juan 1320.',s));
+ const first=queryPlan(s).slice(0,6);assert.ok(first.some(p=>p.q.includes('parrilla')));assert.ok(first.some(p=>p.q.includes('cerveceria')));
+});
+
+test('las pestañas públicas reels y tagged identifican la cuenta; una publicación no inventa su autor',()=>{
+ for(const suffix of ['/reels/','/tagged/'])assert.equal(instagramHandle('https://www.instagram.com/resto_qa'+suffix),'resto_qa');
+ for(const url of ['https://instagram.com/reel/abc/','https://instagram.com/p/abc/','https://instagram.com/explore/locations/123/','https://instagram.com/accounts/reels/'])assert.equal(instagramHandle(url),'');
+ assert.ok(webCandidate({...result('resto_qa'),url:'https://instagram.com/resto_qa/reels/',title:'Restó QA',snippet:'Restó en Tucumán. Reservas.'},{...settings,cities:'Tucumán',segment:'Gastronomía',businessTier:'all'},profile));
 });
 test('direcciones privadas y metadatos no se consideran sitios públicos',()=>{
  for(const ip of ['127.0.0.1','10.1.2.3','172.16.0.1','192.168.1.1','169.254.169.254','::1','::ffff:127.0.0.1','fe80::1','fd00::1'])assert.equal(isPublicAddress(ip),false,ip);

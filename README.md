@@ -1,4 +1,4 @@
-# Nexo · Clientes 3.7.1
+# Nexo · Clientes 3.7.2
 
 
 ## Estado vigente 3.7 — 21/10/2026, Local
@@ -567,3 +567,59 @@ Comparación de tablas en modo lectura: 161 leads, 1 evento, 1 settings, 0 sched
 Pruebas aisladas cerradas; no se incorporaron cuentas ni envíos ficticios a los datos
 reales. Docs actualizadas README.md y versión/ZIP en EMPEZA-ACA.txt. Se conserva
 la branch de trabajo; no hay remoto para push ni merge a main en este repo local.
+
+### Prueba desde la pantalla y cobertura 3.7.2 — 21/10/2026, Local
+
+Se abrió la instalación real del escritorio; la sesión disponible en el navegador
+de prueba pedía usuario/contraseña. Para no alterar los datos reales se abrió el
+mismo programa en 18776, con cuenta y datos de QA separados, y se inició la búsqueda
+desde el botón de la UI: @mila.content, Argentina, Tucuman, Gastronomía, todas las
+categorías, oferta identificada automáticamente. Evidencia QA fuera de Git.
+
+La búsqueda pública real llegó a 23 candidatos, 11 consultas, 26 páginas y 229
+perfiles examinados; 28 repetidos, 82 sin ubicación y 96 sin rubro. El buscador
+pidió verificación humana durante la consulta 11. No se resolvió ni se cambió de
+buscador para evitarla. El usuario respondió que no quería completarla ahora y
+solicitó dejar la corrección preparada; se detuvo la búsqueda conservando evidencia.
+No se confirmó llegar a 100; estos resultados no comprueban feeds desactualizados.
+
+La revisión detectó dos falsos positivos: Tribunales (calle Tucumán y Talcahuano,
+CABA) y OLGA (la única mención geográfica era @alterpoint_tucuman). Se excluyen
+menciones, hashtags y URLs como ubicación; CABA contradice provincia Tucumán.
+Se preservan calles con nombres de provincias como San Juan 1320 en Yerba Buena.
+Los enlaces a pestañas /usuario/reels/ y /usuario/tagged/ se reconocen como cuenta;
+los enlaces a publicaciones siguen sin identificar un autor por conjetura.
+
+Las consultas de ciudad/provincia ahora prueban diferentes subrubros al principio:
+parrilla, restó, cervecería, pizzería, restobar, bodegón, sanguchería y bar, además
+de restaurante. Las búsquedas nacionales conservan la cobertura de ciudades.
+El panel distingue objetivo incompleto, búsqueda en curso y verificación pendiente,
+mostrando los candidatos guardados. No promete encontrar siempre 100.
+
+81 tests aprobados. Reproducción local con la evidencia capturada, sin red:
+21 candidatos aceptados y 2 descartados; exportación/importación Excel confirmó
+21 filas y 0 envíos. Archivo qa/tucuman-21-candidatos-verificados-filtros.xlsx.
+La nueva versión no se volvió a buscar por red porque seguía pendiente el control
+humano y el usuario eligió no completarlo. No se enviaron mensajes de ningún tipo.
+
+Limpieza del escritorio limitada a Nexo: ZIP antiguos 3.3.2, 3.3.3, 3.4.0, 3.5.0,
+3.6.0 y 3.7.0 trasladados a retirados/escritorio-duplicados-20261021-175253.
+El ZIP 3.4.0 estaba abierto en 7-Zip: Restart Manager identificó PID112864 y se
+cerró solo esa instancia tras confirmar su línea de comando con la ruta exacta.
+No se tocaron archivos de diseño, cursos ni otros programas del escritorio.
+
+Branch local codex/nexo-tucuman-cobertura; repo sin remoto ni main. Infraestructura
+compartida, Development y Producción no afectados. No hay despliegue externo.
+
+Cierre instalado 3.7.2: ambas instalaciones verificadas por hash, health18761
+3.7.2 y ZIP vigente idéntico al portable. Respaldo previo:
+retirados/tucuman-372-20261021-180040. Tablas reales idénticas al respaldo:
+161 leads, 1 evento, 1 settings, 0 programaciones, 1 usuario, 0 credenciales.
+No se incorporaron datos/cuentas de QA a la cuenta real. Servicio Instagram aún
+sin configuración. Se cerraron servidor18776, pestaña y navegador dedicados a QA;
+Nexo real quedó abierto. Se retiró también el ZIP3.7.1 al mismo respaldo de
+versiones: el escritorio conserva solo Nexo y Nexo-para-compartir-3.7.2.zip.
+Captura qa/tucuman-prueba-pantalla-372.png conserva los23 resultados originales
+antes de la revisión posterior que descarta2. No representa23 clientes calificados.
+Docs actualizadas README.md y versión/ZIP en EMPEZA-ACA.txt. Branch conservada
+para revisión; no hay remoto para push ni main para promoción en este repo local.
