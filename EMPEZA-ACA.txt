@@ -1,40 +1,35 @@
-NEXO · ENCONTRÁ TU PRÓXIMO CLIENTE
+NEXO · CLIENTES
 
-ABRIR
-1. Extraé el ZIP completo en una carpeta donde puedas guardar archivos.
-2. Hacé doble clic en Nexo.exe.
-3. Probá la demo o conectá Claude en Ajustes y pegá tu Instagram.
+1. Abrí Nexo.exe (extraé primero toda la carpeta si recibiste un ZIP).
+2. Creá tu espacio local. Tu sesión y tus clientes quedan guardados en esta PC.
+3. Pegá el enlace de TU perfil de Instagram y elegí los países.
+4. Buscá hasta 100 hoteles. Podés usar tu Claude abierto copiando la búsqueda
+   y pegando su respuesta, o conectar una API key para hacerlo automáticamente.
+5. Revisá las propuestas. Al registrar un envío, el cliente sale de Pendientes
+   y queda excluido durante dos meses. Excel es una copia opcional de tu planilla.
+
+ENVÍOS
+La cola automática solo puede enviar a conversaciones permitidas por Meta:
+mensaje entrante en las últimas 24 horas, cuenta profesional y token oficial.
+No automatiza mensajes en frío. Los cupos por día y mes son presupuestos tuyos;
+no existe un número diario universal que garantice evitar bloqueos.
+La cola requiere Nexo abierto. Al reiniciar, revisá y reanudá la cola pausada.
+Registrá los mensajes que envíes manualmente fuera de Nexo.
+
+DATOS Y RESPALDOS
+Los datos se guardan en %LOCALAPPDATA%\NexoClientes\Datos.
+Cada usuario tiene su propia planilla. Son cuentas locales, sin nube compartida.
+En tu nombre de usuario > Descargar respaldo podés llevar clientes e historial
+ a otra PC e importarlos allí. No incluye contraseñas ni conexiones.
+Las conexiones recordadas se cifran con la cuenta de Windows de esta PC.
+Conservá tu contraseña: esta versión no tiene recuperación por email.
+Cerrar la ventana de la app también cierra Nexo tras unos segundos.
 
 COMPARTIR
-Compartí el archivo Nexo-Windows-portable.zip, no solo Nexo.exe.
-El ZIP limpio no incluye tus contactos, tu historial ni tus credenciales.
-La otra persona extrae todo y usa sus propias conexiones.
-
-NECESITÁS
-Windows 10/11 de 64 bits con .NET Framework 4.8 y un navegador actualizado.
-No hace falta instalar Node.js, Python, Excel ni Codex para usar la app.
-Internet y una API key de Anthropic con saldo para búsquedas reales.
-La suscripción de Claude por sí sola no incluye la API.
-
-USAR
-- Buscar clientes: pegá tu perfil de Instagram y elegí los países.
-- Mi lista: abrí una propuesta, revisala, copiá y abrí Instagram.
-- Después de enviarla, presioná "Ya envié la propuesta".
-- Tu Excel y tu historial se actualizan al registrar cada envío.
-- No se permite recontactar al mismo perfil durante dos meses calendario.
-- Los cupos diarios y mensuales son internos: no garantizan evitar bloqueos.
-- El envío oficial desde Nexo es opcional. Requiere cuenta profesional,
-  app y token de Meta; solo conversaciones habilitadas por mensaje entrante.
-
-TUS DATOS
-Se guardan en "Mis datos", junto a Nexo.exe. No borres esa carpeta.
-Para respaldo: cerrá Nexo y copiá "Mis datos" completa a otro lugar.
-Las claves de conexión se mantienen en memoria mientras la app esté abierta.
-Si la carpeta está en OneDrive, los datos pueden sincronizarse por OneDrive.
-
-CERRAR
-Usá Ajustes > Cerrar Nexo o el icono Nexo de la bandeja de Windows.
-Cerrar solo la ventana deja el proceso funcionando en la bandeja.
-
-La app no está firmada digitalmente. No se validó en otra PC física.
-La demo es ficticia y no envía mensajes reales.
+Compartí el ZIP limpio completo, nunca tu carpeta de datos ni solo Nexo.exe.
+La otra persona extrae todo, abre Nexo.exe y configura su propio espacio.
+Windows 10/11 x64, .NET Framework 4.8 y navegador actualizado.
+Incluye Node; no necesita instalar Node, Python, Excel ni Codex.
+La API de Claude requiere saldo aparte de la suscripción de Claude.
+El ejecutable no está firmado. Probado en esta PC; no en otra PC física.
+La demo contiene perfiles ficticios y no envía mensajes reales.

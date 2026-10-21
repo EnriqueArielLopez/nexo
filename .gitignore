@@ -7,3 +7,6 @@ dist/
 release/
 build/*.ico
 assets/*.inspect.ndjson
+
+release-v3/
+retirados/
