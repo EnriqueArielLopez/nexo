@@ -1,46 +1,29 @@
-NEXO · CLIENTES 3.2
+NEXO · CLIENTES 3.3.3
 
-1. Abrí Nexo y entrá a tu espacio local.
-2. Pegá el enlace de TU Instagram y elegí los países.
-3. La primera vez, elegí Conectar Claude: abrí Anthropic, creá una clave
-   de acceso con saldo y pegala en Nexo. Se guarda cifrada si lo elegís.
-   Después las búsquedas y propuestas llegan directamente a tu planilla.
-4. Buscá hasta 100 hoteles. Priorizamos hoteles operativos con señales
-   comerciales y contenido escaso, incompleto o desactualizado con evidencia.
-5. Pedirle a Claude abre el asistente dentro de Nexo. Ejemplos:
-   - Buscá 100 hoteles para mi oferta y prepará las propuestas.
-   - Prepará los prioritarios para revisar antes de enviar.
-   - Mostrame el historial o generá mi Excel.
-6. Revisá la selección preparada y confirmala. Claude puede iniciar esa cola;
-   Nexo controla permisos, cupos, duplicados y registra los envíos confirmados.
-   Pausar detiene futuras acciones. Las tareas requieren Nexo abierto.
+BUSCAR CON TU SUSCRIPCIÓN DE LA APP DE CLAUDE
+1. Abrí Nexo e ingresá a tu espacio.
+2. Pegá TU Instagram y elegí países. En Filtros elegí rubro y, opcionalmente,
+   ciudad. Si Instagram no deja leer tu oferta, completá Qué ofrecés.
+3. Pulsá Buscar con Claude. Revisá el pedido preparado con tus filtros.
+4. Pulsá Continuar en Claude: copiar pedido. Pegalo en una conversación nueva
+   de la app de Claude y envialo. Claude debe tener habilitado el conector nexo.
+5. Claude investiga y guarda resultados en la misma planilla. Nexo los muestra
+   automáticamente en Prioritarios o Por verificar según la evidencia disponible.
 
-POR VERIFICAR
-Si el feed o la actividad comercial no se pueden comprobar, el hotel no pasa
- a Prioritarios. Abrí su ficha, revisalo y confirmá solo lo que comprobaste.
-Historias no visibles no significan falta de actividad. No se prometen ventas.
-Si tu oferta no puede leerse desde Instagram, completá Qué ofrecés en Filtros.
+Si el conector no aparece: ejecutá Conectar-con-Claude.cmd una vez y cerrá
+y volvé a abrir Claude. Después de actualizar Nexo, reiniciá Claude para que
+su conector cargue el código nuevo.
 
-CLAUDE
-Claude recibe automáticamente tu perfil, filtros y reglas.
-No hay que copiar respuestas ni entender formatos técnicos.
-La ventana externa de Claude no necesita estar abierta.
-Una conexión API con saldo permite buscar automáticamente desde Nexo.
-La conexión se configura en Anthropic. Max/Team elegibles pueden reclamar
-créditos API: el enlace está en Ya tengo una suscripción de Claude.
-No pegues tu clave en chats. Podés borrarla desde Ajustes en Nexo.
+Con este modo la investigación ocurre en Claude: el botón de Nexo prepara
+el pedido; no ejecuta una búsqueda autónoma en segundo plano. No requiere API.
+La opción API es independiente y requiere una clave con saldo de Anthropic.
 
-ENVÍOS Y EXCEL
-La cola oficial solo envía a conversaciones permitidas por Meta, con mensaje
-entrante en las últimas 24 horas. No envía propuestas en frío automáticamente.
-Los cupos diarios/mensuales son internos; no garantizan evitar bloqueos.
-Registrá los envíos manuales: salen de Prioritarios durante dos meses.
-Excel es opcional y contiene el motivo y la evidencia de cada oportunidad.
+Se respetan rubro, países y ciudad solicitados; no se inventan resultados.
+Un Instagram inaccesible no prueba inactividad. Revisá Por verificar y sus
+fuentes. El puntaje expresa prioridad estimada, no garantía de compra.
+La interfaz conserva el objetivo de hasta 100 clientes; pueden encontrarse menos.
 
-DATOS Y COMPARTIR
-Cuentas locales, sin nube: %LOCALAPPDATA%\NexoClientes\Datos.
-Descargá un respaldo desde tu usuario para trasladar contactos e historial.
-Compartí el ZIP limpio completo; otra persona extrae todo y abre Nexo.exe.
-Necesita Windows10/11 x64, .NET4.8 y navegador actualizado; incluye Node.
-El ejecutable no está firmado. No probado en otra PC física.
-La prueba local usa hoteles ficticios y no envía mensajes reales.
+Los envíos requieren revisión y confirmación. No se envían propuestas durante
+la búsqueda. Los contactos enviados quedan excluidos durante dos meses.
+Datos locales: %LOCALAPPDATA%\NexoClientes\Datos. Respaldá desde tu espacio.
+Para compartir, usá el ZIP limpio; no compartas Datos ni claves.

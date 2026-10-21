@@ -5,7 +5,7 @@ if (Test-Path -LiteralPath $outputFull) { throw "El destino ya existe: $outputFu
 $appFolder=Join-Path $outputFull 'app'
 $binFolder=Join-Path $outputFull 'bin'
 New-Item -ItemType Directory -Path $appFolder,$binFolder | Out-Null
-foreach($name in @('server.mjs','core.mjs','geography.mjs','providers.mjs','export-portable.mjs','zip.mjs','package.json','auth.mjs','automation.mjs','imports.mjs','research.mjs','vault.mjs','qualification.mjs','assistant.mjs')) { Copy-Item -LiteralPath (Join-Path $PSScriptRoot $name) -Destination $appFolder }
+foreach($name in @('server.mjs','core.mjs','geography.mjs','providers.mjs','export-portable.mjs','zip.mjs','package.json','auth.mjs','automation.mjs','imports.mjs','research.mjs','vault.mjs','qualification.mjs','assistant.mjs','campaign.mjs','mcp.mjs','conectar-claude.mjs','mailer.mjs','scheduler.mjs')) { Copy-Item -LiteralPath (Join-Path $PSScriptRoot $name) -Destination $appFolder }
 New-Item -ItemType Directory -Path (Join-Path $appFolder 'public'),(Join-Path $appFolder 'assets') | Out-Null
 foreach($name in @('nexo.html','nexo.js','nexo.css')) { Copy-Item -LiteralPath (Join-Path $PSScriptRoot "public\$name") -Destination (Join-Path $appFolder 'public') }
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'public\fonts') -Destination (Join-Path $appFolder 'public') -Recurse
@@ -14,6 +14,9 @@ $nodeBinary=(Get-Command node.exe).Source
 Copy-Item -LiteralPath $nodeBinary -Destination (Join-Path $binFolder 'node.exe')
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'assets\NODE-LICENSE.txt') -Destination (Join-Path $binFolder 'LICENSE.txt')
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'EMPEZA-ACA.txt') -Destination $outputFull
+Set-Content -LiteralPath (Join-Path $outputFull 'Conectar-con-Claude.cmd') -Value '@echo off
+"%~dp0bin\node.exe" "%~dp0app\conectar-claude.mjs"
+pause'
 Add-Type -AssemblyName System.Drawing
 $bitmap=New-Object System.Drawing.Bitmap 64,64
 $graphics=[Drawing.Graphics]::FromImage($bitmap)

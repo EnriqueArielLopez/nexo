@@ -1,4 +1,59 @@
-# Nexo · Clientes 3.2
+# Nexo · Clientes 3.3.3
+
+## Estado vigente — 21/10/2026, Local
+
+El recorrido elegido por el usuario usa la **app de Claude con su suscripción**.
+En Nexo, completar Instagram, países y Filtros (rubro, ciudad y oferta), pulsar
+**Buscar con Claude**, revisar el pedido y **Continuar en Claude: copiar pedido**.
+Pegar y enviar el pedido en una conversación nueva de Claude con el conector
+`nexo` habilitado. Claude investiga y guarda los resultados en la planilla local.
+Nexo por sí solo prepara el pedido en este modo; no inicia una investigación
+autónoma. La búsqueda dentro de Nexo requiere la opción API independiente.
+
+Se corrigió el pedido que imponía 20 hoteles y omitía los filtros, las
+instrucciones API que seguían buscando exclusivamente hoteles, y la falta de
+señales comerciales para ventas, turnos y catálogos. El pedido ahora lleva
+Instagram, oferta, rubro, países, ciudad y exclusiones, sin autorizar envíos.
+Los candidatos API deben coincidir con el rubro solicitado; ambos recorridos
+descartan países fuera de la selección y la propia cuenta del proveedor.
+La ciudad se transmite como restricción explícita a la investigación; su
+validación depende de la evidencia recogida por Claude.
+
+Los campos y herramientas legacy `hotel_*`/`nexo_guardar_hoteles` se conservan
+por compatibilidad y representan negocios del rubro elegido. La prioridad
+mantiene la exigencia de actividad comercial, oportunidad visible de contenido
+y encaje con la oferta. Un feed inaccesible queda Por verificar.
+
+Se recuperó en esta branch el código 3.3.1 que ya estaba distribuido fuera
+del repositorio (MCP, email, programación y rubros), para conservar su
+funcionalidad al corregirlo. La suite previa aún esperaba 14 columnas en Excel;
+ahora valida 15, incluida la columna de email ya instalada.
+
+Validación: `node --test test.mjs search.test.mjs`, 41 pruebas aprobadas,
+incluido MCP stdio real con cuenta y datos aislados y proveedores simulados.
+Smoke HTTP local: sesión, guardado de filtros, pedido en modo `claude-app`.
+No se realizaron búsquedas cobrables ni se enviaron mensajes comerciales.
+La investigación real desde la sesión de Claude del usuario sigue pendiente.
+La UI local se probó con una cuenta aislada: el botón Buscar con Claude muestra
+el pedido con Gastronomía/Argentina/Córdoba y oferta de fotografía. El navegador
+de pruebas bloqueó el enlace `claude://`; no se validó ese lanzamiento ni una
+investigación real en la app externa. Reiniciar Claude para recargar su conector.
+
+Instalación local 3.3.3 aplicada y comprobada por `/api/health` en puerto 18761.
+Se actualizaron `Desktop/Nexo/app` y `AppData/Local/Programs/NexoClientes/app`,
+esta última referenciada por los conectores existentes de Claude Desktop y Code.
+Se conservaron las cuentas, SQLite y conexiones. Respaldo de programa anterior:
+`retirados/busqueda-333-20261021-133427`; respaldo de la última revisión:
+`retirados/busqueda-333-20261021-133554`. Rollback: cerrar Nexo, restaurar `app`
+y `EMPEZA-ACA.txt` de la copia correspondiente (`copia-0`: escritorio;
+`copia-1`: Programs), abrir Nexo y reiniciar Claude. No restaurar datos SQLite.
+ZIP limpio nuevo en el escritorio: `Nexo-para-compartir-3.3.3.zip`; los ZIP
+anteriores se conservan como versiones históricas. Instancias QA cerradas.
+Este proyecto es independiente del stack Practical Solutions, sin remoto Git
+ni entornos Development/Producción; no se modifican sus scripts ni configuración.
+
+Los apartados siguientes conservan el historial de la versión 3.2; ante
+diferencias, prevalecen este estado y `EMPEZA-ACA.txt`.
 
 Aplicación local para encontrar hasta100 hoteles hispanohablantes a partir del
 Instagram del proveedor. La búsqueda interpreta la oferta, revisa fuentes
