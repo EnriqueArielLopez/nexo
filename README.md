@@ -1,113 +1,119 @@
-# Hotel Prospectos
+# Nexo · Clientes — versión 2
 
-Microaplicación local para investigar hoteles hispanohablantes a partir del
-perfil de Instagram del proveedor de servicios, preparar propuestas y llevar
-un historial de contacto con Excel. Creada y validada en Local el 21/10/2026.
-Es independiente de las aplicaciones de Practical Solutions; no modifica sus
-servidores, Docker, base central, Login ni rutas públicas.
+Aplicación local para encontrar hoteles de habla hispana a partir del perfil
+de Instagram del proveedor, preparar propuestas y mantener un historial de
+contacto con espera mínima de dos meses calendario.
 
-## Abrir y usar
+## Usar y compartir
 
-1. Abrir **Hotel Prospectos** desde el escritorio. Se abre una ventana de Edge
-   con la aplicación local, en `http://127.0.0.1:18761`.
-2. En Conexiones ingresar una **API key de Anthropic**, con saldo y Web search
-   habilitado en Claude Console. Una suscripción de claude.ai no incluye esta
-   API. La conexión ejecuta una llamada mínima y las búsquedas tienen costo.
-3. Pegar el perfil de Instagram **de quien ofrece los servicios**. Claude
-   investiga su oferta con fuentes públicas y busca hasta 12 hoteles en la
-   región. Si no consigue evidencia suficiente del perfil, completar el
-   contexto opcional. No hay extracción de seguidores ni acceso privado.
-4. Abrir la fuente de cada candidato, verificar que sea un hotel con español,
-   editar su propuesta y marcar la casilla de revisión. Una sugerencia de IA
-   no equivale a una verificación humana.
-5. Para un contacto nuevo: copiar el texto, abrir Instagram, enviar manualmente
-   y presionar **Ya envié: registrar**. Solo confirmar después del envío real.
-6. Descargar el Excel. La copia maestra `data/Prospectos-hoteles.xlsx` y una
-   instantánea `data/Prospectos-AAAA-MM-DD.xlsx` se regeneran tras cambios y
-   envíos. La hoja Hoteles muestra contactos tachados, último envío, próxima
-   fecha y fuentes; Historial conserva las propuestas y confirmaciones.
-   Cerrar el archivo maestro en Excel para permitir su actualización. Los
-   Excel ya descargados en otra carpeta son instantáneas: volver a descargar
-   para actualizarlos. Editar un Excel no cambia el historial de la aplicación.
-7. El siguiente día y mes se calculan automáticamente con horario argentino.
-   Los cupos iniciales de 5/día y 50/mes son un presupuesto interno editable,
-   no límites oficiales ni garantía contra bloqueos. La demo tiene cupos
-   separados y nunca envía a Instagram.
-8. El acceso **Cerrar Hotel Prospectos** detiene el proceso y borra las
-   credenciales de memoria. Cerrar solo la ventana de Edge deja el proceso
-   local funcionando. No se instala tarea programada ni arranque automático.
+- En esta PC: abrir **Nexo** desde el escritorio o `Nexo/Nexo.exe`.
+- Para otra persona: enviar **Nexo-para-compartir.zip** del escritorio. Debe
+  extraer el ZIP completo y abrir `Nexo.exe`, sin separar el ejecutable de
+  `app` y `bin`. El ZIP limpio no contiene contactos ni credenciales.
+- Requisitos: Windows 10/11 x64, .NET Framework 4.8 y navegador actualizado.
+  Incluye Node 22.14. No requiere instalar Node, Python, Excel ni Codex.
+- La investigación real necesita conexión a Internet y una API key de Claude
+  con saldo y búsqueda web habilitada; una suscripción de claude.ai no la
+  reemplaza. Cada persona configura su propia clave desde Ajustes.
+- El ejecutable está compilado localmente y no tiene firma digital. Se probó
+  extraído del ZIP en esta PC, no en otra computadora física.
 
-## Conexión oficial de Instagram
+## Flujo de trabajo
 
-Esta versión permite conexión con **token oficial** de Instagram Login;
-no pide tu contraseña ni automatiza el inicio de sesión. Requiere cuenta
-profesional, una app propia de Meta, token válido, permisos de lectura y
-mensajería (`instagram_business_basic`, `instagram_business_manage_messages`)
-y, según el uso, aprobación de Meta. No incluye un servicio OAuth publicado:
-sin app/token de Meta no se pueden activar los envíos API.
+1. **Buscar clientes**: pegar el Instagram de quien ofrece los servicios,
+   elegir países en el selector y buscar. El selector permite búsqueda por
+   nombre, selección múltiple, América Latina y todos los países/territorios
+   del catálogo en español. Los filtros opcionales permiten ciudad/zona,
+   tipo de alojamiento y hasta 5, 12, 20 o 30 candidatos.
+2. **Mi lista**: filtrar por nombre, ciudad, país o estado. Abrir una propuesta
+   muestra el motivo, la fuente y el texto editable. Revisar el perfil y el
+   idioma antes de preparar el contacto. “Copiar y abrir Instagram” prepara el
+   texto y abre Instagram; el envío de un contacto nuevo se hace allí.
+3. **Registrar**: después del envío, “Ya envié la propuesta” guarda historial,
+   actualiza Excel y bloquea el recontacto por dos meses calendario. Para un
+   resultado incierto, revisar Instagram y conciliar desde Historial.
 
-Después de conectar: presionar **Actualizar conversaciones habilitadas**. Se
-consultan hasta 50 conversaciones y 50 mensajes por conversación; solo un
-mensaje entrante comprobado desde el destinatario en las últimas 24 horas
-habilita el botón API. No se inicia una conversación en frío desde la API.
-Los contactos omitidos por la paginación quedan sin habilitar.
+Claude investiga la oferta del perfil de referencia y sus fuentes públicas;
+si no puede determinar los servicios, pide completar el contexto opcional.
+No extrae seguidores, no accede a perfiles privados ni inventa candidatos
+como sustitución de una búsqueda fallida. Los resultados de IA se revisan.
 
-Cada envío API exige revisión individual y recibe confirmación de Instagram
-antes de marcarse enviado. Errores pausan los envíos. Si una llamada se corta
-sin confirmación, se bloquea ese contacto como incierto y se debe verificar
-en Instagram para conciliarlo. No hay reintentos automáticos. Al reconectar
-se puede levantar la pausa después de resolver el problema en Meta.
+El Excel tiene dos hojas: Hoteles e Historial, con estado, propuestas, fuentes,
+fechas y tachado nativo de las filas contactadas. La copia maestra se guarda
+en `Mis datos/Prospectos-hoteles.xlsx`, junto al ejecutable, más una instantánea
+por día. Las copias descargadas anteriormente son instantáneas: volver a
+descargar para actualizarlas. Editarlas no cambia el historial de Nexo.
+Cerrar el maestro en Excel para permitir su actualización.
 
-La espera mínima de dos meses calendario se aplica a envíos manuales y API,
-con deduplicación por usuario de Instagram sin distinguir mayúsculas. Ejemplo:
-31 de diciembre → 28 de febrero. Un cambio de username en Instagram no es
-detectable de forma fiable por esta versión. **No contactar** bloquea hasta
-desmarcar esa casilla. Los cambios se conservan en SQLite entre sesiones.
-Los envíos hechos fuera de la app deben registrarse manualmente para contar.
+Los cupos iniciales 5/día y 50/mes son controles internos editables; no son
+límites oficiales ni garantizan evitar restricciones. La demo tiene cupos
+separados y nunca envía mensajes a Instagram. Los envíos externos a Nexo se
+deben registrar manualmente para contar en el historial. La deduplicación usa
+el username sin distinguir mayúsculas; cambios de username no se detectan de
+forma fiable. “No volver a contactar” bloquea ese perfil hasta desmarcarlo.
 
-Fuentes oficiales de las integraciones:
-- https://platform.claude.com/docs/en/agents-and-tools/tool-use/web-search-tool
-- https://www.postman.com/meta/instagram/documentation/6yqw8pt/instagram-api
-- https://developers.facebook.com/docs/instagram-platform/instagram-api-with-instagram-login
+## Conexiones y privacidad
 
-## Datos y respaldo
+La API de Instagram es opcional. Se conecta con un token oficial de Instagram
+Login, cuenta profesional, app propia y permisos de Meta, incluida aprobación
+cuando corresponda. No se implementa un OAuth alojado ni se pide la contraseña
+de Instagram. La aplicación consulta hasta 50 conversaciones y 50 mensajes
+por conversación; solo habilita API para destinatarios con un mensaje entrante
+comprobado en las últimas 24 horas. No inicia mensajes en frío por API.
 
-La instalación del escritorio guarda su historial en su propia carpeta `data`.
-Es la copia operativa; la carpeta de desarrollo tiene datos separados. No borrar
-`prospectos.sqlite`. Para respaldar, cerrar la aplicación con su acceso de
-cierre y copiar la carpeta `data` completa a una ubicación de respaldo. Para
-restaurar, con la aplicación cerrada, preservar primero los datos actuales y
-copiar el respaldo. Si el escritorio está en OneDrive, esos datos también
-pueden sincronizarse por OneDrive. Las claves y tokens se mantienen solo en
-memoria del servidor, nunca en SQLite, Excel, Git ni almacenamiento del navegador.
+Cada envío requiere confirmación individual. Fallos de proveedor pausan el
+envío; una respuesta incierta exige conciliación y nunca se reintenta sola.
+La conexión oficial real no fue probada sin credenciales del titular.
 
-Solo escucha en loopback, valida Host/Origin y exige token CSRF en mutaciones.
-Claude recibe el perfil público de referencia, región, contexto, plantilla y
-usuarios que se quieren excluir; Meta recibe el texto únicamente al confirmar
-un envío API. Fuentes externas y resultados de IA requieren revisión.
+Las claves de Claude y Meta se conservan solo en memoria hasta cerrar Nexo.
+Claude recibe el perfil público, contexto, filtros, plantilla y usuarios a
+excluir. Meta recibe el texto al confirmar un envío API. Solo escucha en
+`127.0.0.1:18761`, valida Host/Origin y exige CSRF para mutaciones.
+Sonido opcional generado localmente, sin archivos ni conexiones externas.
+La tipografía Manrope está incluida con su licencia OFL; el runtime Node
+incluye su licencia. No necesita descargar fuentes para mostrar la interfaz.
 
-## Desarrollo local
+## Datos, cierre y respaldo
 
-Node.js >=22.13, SQLite nativo; generación de Excel con `@oai/artifact-tool`
-del runtime de Codex. `node_modules` es una junction al runtime instalado y
-el tachado nativo usa Python estándar del mismo runtime. No modificar esos
-runtimes. Si Codex los reemplaza, recrear la junction apuntando al runtime
-vigente; no borrar recursivamente una junction junto con su destino.
+El historial operativo está en `Escritorio/Nexo/Mis datos/prospectos.sqlite`.
+Usar **Ajustes > Cerrar Nexo**, el acceso Cerrar Nexo o la bandeja de Windows.
+Cerrar solo la ventana deja el proceso en la bandeja. Para respaldar, cerrar
+Nexo y copiar **Mis datos** completa. Para restaurar, preservar primero los
+datos actuales y copiar el respaldo con Nexo cerrado. Si el escritorio está
+en OneDrive, los datos pueden sincronizarse por ese servicio.
 
-`npm test` ejecuta pruebas de lógica, persistencia y proveedores simulados.
-`npm start` inicia el servidor. `install-desktop.ps1` crea una instalación
-nueva y dos accesos; se niega a sobreescribir una carpeta existente.
+La instalación del 21/10/2026 preservó el historial de la primera versión.
+La carpeta anterior `Hotel Prospectos` queda como respaldo; sus accesos del
+escritorio se reemplazaron por Nexo y Cerrar Nexo. Los datos de desarrollo y
+pruebas están separados. El ZIP para compartir permanece limpio.
 
-Estado: validación exclusivamente Local. Claude y Meta reales requieren
-credenciales del titular; no se utilizaron ni enviaron mensajes reales en la
-prueba. No se configuraron Development ni Producción. Repo nuevo en branch
-`codex/hotel-prospectos`, sin remoto; no hay push ni merge pendiente de apps
-existentes. No se modificó documentación de infraestructura porque no cambia
-su estado operativo.
+## Desarrollo, distribución y validación
 
-Prueba completada: 9 pruebas automatizadas correctas; interfaz abierta y
-simulación registrada; instalación independiente en el escritorio; descarga
-HTTP del XLSX; validación de sus dos hojas, tabla, panel inmovilizado y estilo
-nativo de tachado solo en la fila contactada. Se comprobó el bloqueo hasta
-21/12/2026 para un envío demo del 21/10/2026 y el rechazo de mutaciones sin
-CSRF y solicitudes de origen externo. No se contactó a ningún hotel real.
+- Repo en branch `codex/hotel-prospectos`, sin remoto configurado.
+- `npm test`: lógica, proveedores simulados, países/filtros, ZIP y Excel.
+- `npm start`: servidor local. `PORT` y `HOTEL_DATA_DIR` permiten pruebas
+  aisladas, sin cambiar la base operativa.
+- `build-portable.ps1`: compila `build/Launcher.cs` con el compilador .NET de
+  Windows; copia runtime, código y recursos y genera un ZIP limpio. Se niega
+  a sobreescribir un destino existente. No ejecutarlo sobre datos de usuarios.
+- `install-desktop.ps1`: instala la distribución de `release/Nexo`, preserva
+  datos anteriores y crea los accesos y el ZIP del escritorio.
+- La plantilla Excel `assets/base.xlsx` fue creada con `@oai/artifact-tool`.
+  `export.mjs` y `stamp-xlsx.py` son herramientas de construcción de esa
+  plantilla. El runtime portable solo usa `export-portable.mjs` y `zip.mjs`
+  para completarla; no depende de esas herramientas ni de `node_modules`.
+- `launch.ps1` y `stop.ps1` delegan la apertura y el cierre en Nexo.exe de la
+  distribución portable; no buscan runtimes instalados en la computadora.
+
+Validado en Local el 21/10/2026: 13 pruebas automatizadas; selector regional
+y búsqueda de país desde pantalla; demo, propuesta y registro; ZIP limpio
+extraído; ejecución con `bin/node.exe` incluido; descarga y lectura independiente
+del Excel, tabla, paneles y tachado; cierre/reapertura con historial persistente;
+instalación del escritorio con historial anterior conservado. Sin mensajes
+reales, sin pruebas de Claude/Meta con credenciales reales y sin cambios de
+Development, Producción ni infraestructura de Practical Solutions.
+
+Referencia de interacción solicitada: https://landonorris.com/ (navegación
+breve y transiciones). Diseño y recursos propios, sin copiar sus imágenes.
+APIs: https://platform.claude.com/docs/en/agents-and-tools/tool-use/web-search-tool
+y https://www.postman.com/meta/instagram/documentation/6yqw8pt/instagram-api

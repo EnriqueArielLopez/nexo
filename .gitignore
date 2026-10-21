@@ -3,3 +3,7 @@ data/
 qa/
 *.log
 *.env
+dist/
+release/
+build/*.ico
+assets/*.inspect.ndjson

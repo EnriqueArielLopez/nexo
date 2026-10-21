@@ -1,0 +1,5 @@
+# Preserve official third-party license text, including original whitespace.
+assets/NODE-LICENSE.txt -whitespace
+public/fonts/OFL.txt -whitespace
+*.ttf binary
+*.xlsx binary
