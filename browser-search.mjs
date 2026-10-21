@@ -1,4 +1,4 @@
-// Product integration: a separate, visible Edge profile for public searches only.
+// Product integration: a separate, minimized Edge profile for public searches only.
 // No stealth flags, CAPTCHA solving, personal browser profile or private sessions.
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -28,7 +28,7 @@ export class SearchBrowser {
   if(!this.client){
    await fs.mkdir(this.profileDir,{recursive:true});const executable=await this.edge();
    // The profile is dedicated to Nexo. Debugging listens only on loopback, on a random port.
-   const child=this.launch(executable,['--remote-debugging-address=127.0.0.1','--remote-debugging-port=0','--user-data-dir='+this.profileDir,'--no-first-run','--no-default-browser-check','--new-window','about:blank'],{stdio:'ignore',windowsHide:false});
+   const child=this.launch(executable,['--remote-debugging-address=127.0.0.1','--remote-debugging-port=0','--user-data-dir='+this.profileDir,'--no-first-run','--no-default-browser-check','--start-minimized','--new-window','about:blank'],{stdio:'ignore',windowsHide:true});
    let launchError=null;child.once('error',e=>{launchError=e;});child.unref();
    for(let i=0;i<40&&!this.client;i++){if(launchError)throw Error('No se pudo abrir Microsoft Edge.');await new Promise(r=>setTimeout(r,250));try{this.client=await this.connect(await this.endpoint());}catch{}}
    if(!this.client)throw Error('No se pudo preparar el buscador. Cerrá solo la ventana de búsqueda de Nexo y volvé a intentar.');
@@ -38,21 +38,30 @@ export class SearchBrowser {
   const target=blank||await this.client.call('Target.createTarget',{url:'about:blank'});this.targetId=target.targetId;
   const attached=await this.client.call('Target.attachToTarget',{targetId:this.targetId,flatten:true});this.sessionId=attached.sessionId;
   await this.client.call('Page.enable',{},this.sessionId);
+  await this.windowState('minimized');
  }
- async show(){await this.ensure();await this.client.call('Target.activateTarget',{targetId:this.targetId});}
+ async windowState(windowState){const {windowId}=await this.client.call('Browser.getWindowForTarget',{targetId:this.targetId});await this.client.call('Browser.setWindowBounds',{windowId,bounds:{windowState}});}
+ async show(){await this.ensure();await this.windowState('normal');await this.client.call('Target.activateTarget',{targetId:this.targetId});}
  async navigate(url){if(!isSearchUrl(url))throw Error('Solo se permite abrir el buscador público.');await this.ensure();this.expectedQuery=new URL(url).searchParams.get('q');const result=await this.client.call('Page.navigate',{url},this.sessionId);if(result.errorText)throw Error('No se pudo abrir el buscador. Revisá la conexión.');}
- async current({signal}={}){
+ async current({signal,previousHtml}={}){
   await this.ensure();let last=null;
   for(let i=0;i<50;i++){
    if(signal?.aborted)throw Error('Búsqueda detenida.');
    const result=await this.client.call('Runtime.evaluate',{expression:SNAPSHOT,returnByValue:true},this.sessionId);last=result.result?.value;
    if(last?.otherPage&&last.url!=='about:blank')throw Error('La ventana del buscador está en otra página. Volvé a iniciar la búsqueda; Nexo no leerá esa página.');
-   if(last?.ready==='complete'&&last.html&&(needsHuman(last.html)||!this.expectedQuery||last.query===this.expectedQuery))return {url:last.url,html:last.html};
+   if(last?.ready==='complete'&&last.html&&last.html!==previousHtml&&(needsHuman(last.html)||!this.expectedQuery||last.query===this.expectedQuery)){this.lastHtml=last.html;return {url:last.url,html:last.html};}
    await new Promise(r=>setTimeout(r,200));
   }
   throw Error('El buscador todavía no terminó de cargar. Revisá la ventana de búsqueda.');
  }
  async read(url,options){await this.navigate(url);return this.current(options);}
+ async next(options){
+  const previousHtml=this.lastHtml;if(needsHuman(previousHtml||''))return null;
+  // Follow only the provider's own next-results form. Never submit a challenge form.
+  const expression=`(()=>{if(!['html.duckduckgo.com','duckduckgo.com','www.duckduckgo.com'].includes(location.hostname))return false;const form=[...document.forms].find(f=>{const u=new URL(f.action,location.href);return u.origin===location.origin&&u.pathname==='/html/'&&[...f.querySelectorAll('input[type=submit],button')].some(b=>/^(next|siguiente)/i.test(b.value||b.textContent))&&Number(f.querySelector('input[name=s]')?.value)>0&&f.querySelector('input[name=q]')?.value===${JSON.stringify(this.expectedQuery)};});if(!form)return false;HTMLFormElement.prototype.submit.call(form);return true;})()`;
+  const result=await this.client.call('Runtime.evaluate',{expression,returnByValue:true},this.sessionId);if(!result.result?.value)return null;
+  return this.current({...options,previousHtml});
+ }
  async close(){if(this.client&&this.targetId)await this.client.call('Target.closeTarget',{targetId:this.targetId}).catch(()=>{});this.client?.close();this.client=null;}
 }
 export class BrowserWebDiscovery extends PublicWebDiscovery {
@@ -70,7 +79,16 @@ export class BrowserWebDiscovery extends PublicWebDiscovery {
    // Only after a user's explicit Continue; do not navigate/reload or solve the challenge.
    page=await this.browser.current({signal:this.signal});
   }
-  return parseSearchResults(page.html);
+  this.query=q;return parseSearchResults(page.html);
+ }
+ async nextPage(){
+  if(this.signal?.aborted)throw Error('Búsqueda detenida.');
+  const wait=Math.max(0,this.lastSearch+this.delayMs-Date.now());if(wait)await new Promise(r=>setTimeout(r,wait));
+  if(this.signal?.aborted)throw Error('Búsqueda detenida.');
+  const page=await this.browser.next({signal:this.signal});if(!page)return [];
+  this.calls++;this.lastSearch=Date.now();let current=page;
+  while(needsHuman(current.html)){if(!this.onChallenge)throw Error('Completá la verificación en la ventana del buscador.');await this.browser.show();await this.onChallenge({query:this.query,url:current.url});if(this.signal?.aborted)throw Error('Búsqueda detenida.');current=await this.browser.current({signal:this.signal});}
+  return parseSearchResults(current.html);
  }
 }
 export function waitForHuman(signal,present){

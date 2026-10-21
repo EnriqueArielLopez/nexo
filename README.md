@@ -1,6 +1,54 @@
-# Nexo · Clientes 3.5.0
+# Nexo · Clientes 3.6.0
 
-## Estado vigente 3.5 — 21/10/2026, Local
+
+## Estado vigente 3.6 — 21/10/2026, Local
+
+Se amplió la búsqueda que antes recorría 12 consultas sin páginas siguientes y
+solo devolvió 5 candidatos. Ahora distribuye consultas por ciudades, sigue el
+formulario normal de paginación (hasta 3 páginas por consulta, 540 en total),
+evita páginas repetidas y excluye publicaciones/reels de las consultas de perfiles.
+El filtro inicial es alta categoría: hoteles de 3 a 5 estrellas o señales
+publicadas de categoría equivalente. Directorios y guías se descartan.
+También puede leer webs públicas con un único Hotel en JSON-LD, categoría y
+un único Instagram enlazado. No adivina cuentas ni emails; estos últimos solo
+se guardan cuando aparecen en la fuente. Se limita y cachea la lectura de webs.
+
+Edge trabaja minimizado con perfil dedicado; se muestra si solicita verificación.
+No se resuelven CAPTCHA ni se evaden bloqueos. El número 100 es un objetivo,
+no una garantía de disponibilidad de información pública. Se informa cuántas
+consultas, páginas, perfiles y descartes hubo. Feed, actividad y capacidad de
+pago permanecen sin verificar hasta revisión. Un conteo bajo de publicaciones
+indexadas puede subir la afinidad, con etiqueta explícita de dato indexado.
+No demuestra inactividad ni califica por sí solo al contacto.
+
+Limpiar resultados archiva únicamente candidatos web sin eventos, bajas ni
+programaciones activas. Restaurar recupera esos datos. El historial no se borra.
+La columna SQLite archived es aditiva; no requiere migración destructiva.
+El respaldo JSON incluye archivados y conserva su estado al recuperar.
+
+Selección masiva hasta 100, incluidos candidatos por verificar. Mensaje base
+personalizado con nombre/cuenta/ciudad/servicio/remitente; la vista previa toma
+solo los primeros por afinidad hasta el cupo restante (5 Instagram, 20 email
+por defecto). La confirmación revisa perfiles y textos. Una huella de la tanda
+evita usar una vista previa con mensajes/destinatarios cambiados. Instagram
+sin token prepara una tanda manual; copiar/abrir no registra envío: el usuario
+pulsa Enviar en Instagram y después Ya envié en Nexo. Email usa SMTP y adjunto
+configurados. No se envían mensajes reales durante QA. Los enviados, pendientes
+e inciertos se excluyen de nuevas tandas, y los conocidos de futuras búsquedas.
+
+Clientes.xlsx conserva todos los activos y se regenera al registrar envíos.
+Un archivo previamente descargado es una copia: hay que descargarlo otra vez.
+Pruebas locales: 65 tests Node aprobados; smoke HTTP con 100 registros ficticios,
+top5/top20, personalización, rechazo de huella inválida, registro manual,
+limpiar99/restaurar y Excel100. Lector independiente Python/XML: 100 filas,
+15 columnas, 1 evento y estilo de enviado diferente. UI probada con 99 disponibles
+tras un envío ficticio; la tanda propuso los 4 restantes del cupo diario.
+Validación real y estado de instalación se registran al finalizar más abajo.
+Solo Local; sin remoto configurado, sin Development/Producción compartidos.
+
+## Historial de la versión 3.5
+
+## Estado anterior 3.5 — 21/10/2026, Local
 
 Corrección del bloqueo observado en la captura del usuario: el recorrido
 principal ya no descarga el HTML del buscador como cliente HTTP. Abre una
@@ -366,3 +414,38 @@ el escritorio conserva solo Nexo.lnk y Nexo-para-compartir.zip. Respaldo previo:
 retirados/actualizacion-20261021-041020. La pestaña anterior no pudo recargarse
 por restricción del control del navegador; usar el acceso Nexo del escritorio.
 Captura de la prueba ficticia en qa/nexo-32-asistente.png (fuera de Git).
+
+
+### Cierre 3.6 — 21/10/2026, Local
+
+65 tests aprobados. La regresión de presupuesto prueba que la búsqueda sigue
+más allá de 180 páginas cuando faltan coincidencias y no pide una cuarta página
+que iba a descartar. Límite final: 180 consultas, hasta 3 páginas cada una (540).
+La lectura de hasta 3 webs distintas de una página se hace en paralelo y cachea
+resultados. No se aumentó la frecuencia del buscador ni se cambiaron los controles
+de verificación humana.
+
+Prueba real controlada con perfil público mila.content, Hoteles, España, sin
+Claude/API: acumuló 22 candidatos procedentes de fuentes públicas. La última
+corrida agregó 12, recorrió 19 consultas y 47 páginas y examinó 130 perfiles;
+17 duplicados, 63 sin ubicación coincidente, 22 sin categoría, 2 directorios
+y otros descartes. Se detuvo manualmente al terminar el smoke, sin agotar
+el plan. Ejemplos con fuente propia y contacto: Alma Barcelona, Marbella Club,
+Majestic Hotel & Spa, Neomagna Madrid y Kimpton Los Monteros. Los datos siguen
+en revisión: no se verificó el feed actual ni capacidad de pago. El objetivo
+de 100 candidatos reales completos NO quedó validado. Ningún mensaje real
+fue enviado. Excel real de QA y captura quedan fuera de Git en qa/.
+
+Instalación 3.6.0 actualizada en Desktop/Nexo y Programs/NexoClientes con respaldo
+previo en retirados/premium-360-*. Health 18761 confirma 3.6.0. ZIP del escritorio
+Nexo-para-compartir-3.6.0.zip: 40 entradas, sin bases, credenciales ni datos de QA.
+Comparación de bases en modo lectura contra respaldo: se conservaron sin cambios
+los 8 leads, 1 evento, settings, 0 programaciones y 1 usuario de la cuenta real.
+Las pruebas de 100 y los registros manuales ficticios usaron bases aisladas.
+
+Documentación actualizada: README.md y EMPEZA-ACA.txt. Sin cambios a infraestructura
+compartida, Development o Producción. Branch local codex/nexo-resultados-premium;
+el repo no tiene remoto ni flujo de deploy compartido para merge/push. Se conserva
+la branch para revisión; no se eliminaron branches. Pendiente: completar búsqueda
+real de 100 y verificar feeds actuales; SMTP y envío desde Instagram del titular
+requieren su configuración y revisión de destinatarios/textos.

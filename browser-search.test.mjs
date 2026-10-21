@@ -24,6 +24,15 @@ test('detener una búsqueda mientras espera libera el trabajo y permite uno nuev
  const waiting=waitForHuman(controller.signal,r=>{resume=r;});controller.abort();await assert.rejects(()=>waiting,/detenida/);resume();
  let nextResume;const next=waitForHuman(new AbortController().signal,r=>{nextResume=r;});nextResume();await next;
 });
+test('página siguiente espera la verificación humana y no vuelve a navegar',async()=>{
+ let next=0,current=0,shown=0,confirm;
+ const browser={next:async()=>{next++;return {html:'anomaly-modal',url:'https://html.duckduckgo.com/html/'};},show:async()=>{shown++;},current:async()=>{current++;return {html};}};
+ const web=new BrowserWebDiscovery({browser,delayMs:0,onChallenge:()=>new Promise(resolve=>{confirm=resolve;})});web.query='hotel';const pending=web.nextPage();await new Promise(r=>setTimeout(r,0));assert.equal(next,1);assert.equal(current,0);confirm();assert.equal((await pending).length,1);assert.equal(shown,1);assert.equal(next,1);assert.equal(current,1);
+});
+test('sin formulario siguiente o ante CAPTCHA el controlador no avanza',async()=>{
+ const browser=new SearchBrowser('qa/no-browser-started');browser.lastHtml='anomaly-modal';let calls=0;browser.client={call:async()=>{calls++;return {result:{value:false}};}};
+ assert.equal(await browser.next(),null);assert.equal(calls,0);browser.lastHtml='<html>última página</html>';assert.equal(await browser.next(),null);assert.equal(calls,1);
+});
 test('transporte de navegador asocia respuestas y rechaza operaciones pendientes al cerrar',async()=>{
  class Socket extends EventTarget{readyState=1;sent=[];send(value){this.sent.push(JSON.parse(value));}close(){this.readyState=3;this.dispatchEvent(new Event('close'));}}
  const socket=new Socket(),client=new DevtoolsConnection(socket);const reply=client.call('Target.createTarget',{url:'about:blank'});assert.equal(socket.sent[0].method,'Target.createTarget');socket.dispatchEvent(new MessageEvent('message',{data:JSON.stringify({id:1,result:{targetId:'qa'}})}));assert.deepEqual(await reply,{targetId:'qa'});

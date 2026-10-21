@@ -9,7 +9,7 @@ const settings={lastSeed:'https://www.instagram.com/proveedor_qa/',segment:'Hote
 const profile={services:'creación de contenido y fotografía'};
 const result=(h='hotel_qa')=>({url:'https://www.instagram.com/'+h+'/',title:'Hotel QA (@'+h+') - Instagram',snippet:'Hotel en Salta, Argentina. Reservas por WhatsApp. Habitaciones y spa.'});
 const page=items=>items.map(r=>`<h2><a class="result__a" href="//duckduckgo.com/l/?uddg=${encodeURIComponent(r.url)}&amp;rut=x">${r.title}</a></h2><a class="result__snippet">${r.snippet}</a>`).join('');
-function fixture(){const dir=mkdtempSync(path.join(os.tmpdir(),'nexo-web-'));const store=new Store(dir);store.saveSettings(settings);return {store,close(){store.close();rmSync(dir,{recursive:true,force:true});}};}
+function fixture(){const dir=mkdtempSync(path.join(os.tmpdir(),'nexo-web-'));const store=new Store(dir);store.saveSettings({...settings,businessTier:'all'});return {store,close(){store.close();rmSync(dir,{recursive:true,force:true});}};}
 test('parser web conserva URLs, nombres, acentos y evidencia sin confundir resultados',()=>{
  const r=parseSearchResults(page([result(),{...result('otro_hotel'),title:'Hotel &amp; Café',snippet:'México &amp; España'}]));assert.equal(r.length,2);assert.equal(r[0].url,result().url);assert.equal(r[1].title,'Hotel & Café');assert.equal(r[1].snippet,'México & España');
 });
@@ -32,7 +32,7 @@ test('la oferta se identifica en biografía pública y no se deduce solo por ten
  const explicit=await empty.profile(settings.lastSeed,{offer:'Venta de software'});assert.equal(explicit.services,'Venta de software');assert.equal(empty.calls,1);
 });
 test('cada consulta conserva países y ciudades; no expande la ubicación al no encontrar',()=>{
- const plan=queryPlan({...settings,cities:'Salta; Jujuy',countries:['AR','UY']});assert.equal(plan.length,48);assert.ok(plan.every(p=>p.q.includes('site:instagram.com')&&/Salta|Jujuy/.test(p.q)&&/Argentina|Uruguay/.test(p.q)));
+ const plan=queryPlan({...settings,cities:'Salta; Jujuy',countries:['AR','UY']});assert.equal(plan.length,16);assert.ok(plan.every(p=>p.q.includes('site:instagram.com')&&/Salta|Jujuy/.test(p.q)&&/Argentina|Uruguay/.test(p.q)));
 });
 test('direcciones privadas y metadatos no se consideran sitios públicos',()=>{
  for(const ip of ['127.0.0.1','10.1.2.3','172.16.0.1','192.168.1.1','169.254.169.254','::1','::ffff:127.0.0.1','fe80::1','fd00::1'])assert.equal(isPublicAddress(ip),false,ip);

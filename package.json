@@ -1,1 +1,1 @@
-{"name":"nexo-clientes","version":"3.5.0","private":true,"type":"module","scripts":{"start":"node --disable-warning=ExperimentalWarning server.mjs","test":"node --test test.mjs search.test.mjs web-discovery.test.mjs browser-search.test.mjs"},"engines":{"node":">=22.13"}}
+{"name":"nexo-clientes","version":"3.6.0","private":true,"type":"module","scripts":{"start":"node --disable-warning=ExperimentalWarning server.mjs","test":"node --test test.mjs search.test.mjs web-discovery.test.mjs browser-search.test.mjs prospecting.test.mjs"},"engines":{"node":">=22.13"}}

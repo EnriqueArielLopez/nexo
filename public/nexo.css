@@ -11,3 +11,5 @@ label{color:#70617e}.intro p{color:#897b96}.view-tabs button{color:#927ca3}.sear
 .assistant-dialog[open]{display:flex;flex-direction:column;overflow:hidden;max-height:90vh}.assistant-dialog .modal-head{flex-shrink:0}.assistant-dialog .assistant-log{flex:1;min-height:70px;max-height:250px;margin:10px 0}.assistant-dialog .assistant-suggestions,.assistant-dialog form,.assistant-dialog>.small-note,.assistant-dialog>.wide{flex-shrink:0}.assistant-dialog .small-note{margin-bottom:0;font-size:10px}.assistant-dialog textarea{margin-bottom:10px}.assistant-dialog .modal-head p{margin-bottom:0}
 
 .activity-bar{flex-wrap:wrap}.activity-bar>div{flex:1 1 280px}.activity-bar #continueSearch{white-space:normal}
+
+.section-head{flex-wrap:wrap}.table-actions{flex-wrap:wrap}.filter-fields{grid-template-columns:repeat(2,minmax(0,1fr))}@media(max-width:600px){.filter-fields{grid-template-columns:1fr}}

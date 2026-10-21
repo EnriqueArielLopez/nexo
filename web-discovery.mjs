@@ -1,9 +1,12 @@
+import {personalize} from './templates.mjs';
+import {websiteProfiles} from './website-prospects.mjs';
 import dns from 'node:dns/promises';
 import net from 'node:net';
 import {COUNTRIES} from './geography.mjs';
-import {handle,httpUrl} from './core.mjs';
+import {handle,httpUrl,defaults} from './core.mjs';
 import {isNewProspect} from './campaign.mjs';
 import {ingest} from './imports.mjs';
+import {COUNTRY_CITIES,premiumSignals,isDirectory} from './prospecting.mjs';
 
 export const normalize=v=>String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
 export function decodeHtml(value){return String(value||'').replace(/&#(x[\da-f]+|\d+);/gi,(_,v)=>{const n=v[0].toLowerCase()==='x'?parseInt(v.slice(1),16):Number(v);return n>0&&n<=0x10ffff?String.fromCodePoint(n):'';}).replace(/&(?:amp|quot|apos|lt|gt|nbsp);/g,m=>({'&amp;':'&','&quot;':'"','&apos;':"'",'&lt;':'<','&gt;':'>','&nbsp;':' '})[m]);}
@@ -31,10 +34,10 @@ export async function publicUrl(value){
  const u=new URL(value);if(!['https:','http:'].includes(u.protocol)||u.username||u.password||u.port&&!['80','443'].includes(u.port)||u.hostname==='localhost'||u.hostname.endsWith('.local'))throw Error('La búsqueda solo consulta sitios web públicos.');
  const records=await dns.lookup(u.hostname.replace(/^\[|\]$/g,''),{all:true});if(!records.length||records.some(r=>!isPublicAddress(r.address)))throw Error('Se omitió una dirección privada.');return u;
 }
-export async function fetchPublic(value,{signal}={}){
+export async function fetchPublic(value,{signal,timeoutMs=12000}={}){
  let url=value;
  for(let redirects=0;redirects<5;redirects++){
-  const u=await publicUrl(url);const response=await fetch(u,{redirect:'manual',headers:{'user-agent':'NexoClientes/3.4 (public business research)','accept':'text/html,application/xhtml+xml'},signal:signal?AbortSignal.any([signal,AbortSignal.timeout(12000)]):AbortSignal.timeout(12000)});
+  const u=await publicUrl(url);const response=await fetch(u,{redirect:'manual',headers:{'user-agent':'NexoClientes/3.4 (public business research)','accept':'text/html,application/xhtml+xml'},signal:signal?AbortSignal.any([signal,AbortSignal.timeout(timeoutMs)]):AbortSignal.timeout(timeoutMs)});
   if([301,302,303,307,308].includes(response.status)){const location=response.headers.get('location');await response.body?.cancel();if(!location)throw Error('Redirección sin destino.');url=new URL(location,u).href;continue;}
   if(response.status===429||response.status===403){await response.body?.cancel();const e=Error('El sitio limitó las consultas públicas. Volvé a intentar más tarde.');e.code='WEB_BLOCKED';throw e;}
   if(!response.ok){await response.body?.cancel();throw Error('El sitio respondió HTTP '+response.status);}
@@ -68,10 +71,13 @@ export function matchGeography(text,settings){
   return new RegExp('(?:^|[,;|•·:–—]\\s*|\\b(?:en|in|pais)\\s+)'+escaped(normalize(t))+'(?=$|[\\s,;|•·:!.)])').test(location);
  });
  const explicit=COUNTRIES.filter(hasCountry);const selected=COUNTRIES.filter(c=>settings.countries.includes(c.code));
- const country=explicit.length?selected.find(c=>explicit.includes(c)):selected.find(c=>(citiesByCountry[c.code]||[]).some(city=>contains(location,city)));
+ const ambiguous=new Set(['cuenca','valencia','salamanca','leon','santander']);
+ const atLocation=city=>new RegExp('(?:^|[,;|•·:–—]\\s*|\\b(?:en|in)\\s+)'+escaped(normalize(city))+'(?=$|[\\s,;|•·:!.)])').test(location);
+ const inferred=COUNTRIES.filter(c=>[...(citiesByCountry[c.code]||[]),...(COUNTRY_CITIES[c.code]||[])].some(city=>!ambiguous.has(normalize(city))&&(atLocation(city)||location.split(/\s+/).length>=4&&contains(location,city))));
+ const country=explicit.length?selected.find(c=>explicit.includes(c)):inferred.length===1?selected.find(c=>c.code===inferred[0].code):null;
  if(!country)return null;
  const cities=String(settings.cities||'').split(/[,;\n]+/).map(x=>x.trim()).filter(Boolean);const city=cities.find(c=>contains(text,c));
- if(cities.length&&!city)return null;return {country:country.name,city:city||''};
+ if(cities.length&&!city)return null;return {country:country.name,city:city||(COUNTRY_CITIES[country.code]||[]).find(c=>contains(location,c))||''};
 }
 export function inferServices(text){
  text=normalize(text).replace(/see instagram photos and videos from|instagram photos and videos|fotos y videos de instagram/g,'');
@@ -81,28 +87,39 @@ export function inferServices(text){
 export function webCandidate(result,settings,profile,known=[]){
  const h=instagramHandle(result.url);if(!h||!isNewProspect(h,settings.lastSeed,known))return null;
  const text=[result.title,result.snippet].join(' ');const biography=result.snippet.replace(/^.*?on\s+Instagram\s*:\s*/i,'');
+ if(isDirectory(text))return null;
  const geo=matchGeography(biography,settings);if(!geo||!terms(settings.segment).some(t=>contains(text,t)))return null;
  if(/(?:cerrado definitivamente|permanently closed|agencia de viajes|guia de hoteles|directorio de hoteles|asesoramos y gestionamos sus reservas)/i.test(text)&&settings.segment!=='Turismo')return null;
  const name=result.title.replace(/\s*[-–|]\s*Instagram.*$/i,'').replace(/\s*\(@[^)]+\)/,'').trim().slice(0,200)||h;
- const description=result.snippet.slice(0,1000);const source=result.url;
+ const description=result.snippet.slice(0,1000);const source=result.evidenceUrl||result.url;
  const commercial=/reserv[aá]|booking|compr[aá]|pedidos|turnos|citas|tienda|ventas|whatsapp|contact[aá]|men[uú]|cat[aá]logo/i.test(description);
  const fit=`Rubro ${settings.segment} y ubicación coinciden con los filtros. Oferta del proveedor: ${profile.services}. Encaje específico pendiente de revisión.`;
- const score=45+(geo.city?10:0)+(commercial?10:0);
+ const category=premiumSignals(text,source);if(settings.businessTier==='premium'&&!category.length)return null;
+ const indexedMatch=description.match(/([\d.,]+)\s+(?:posts|publicaciones)\b/i),indexedPosts=indexedMatch?Number(indexedMatch[1].replace(/[.,]/g,'')):null;const sparseHint=indexedPosts!==null&&indexedPosts<=12;
+ const score=Math.min(90,45+(sparseHint?10:0)+(geo.city?10:0)+(commercial?10:0)+Math.min(25,category.length*10));
  const qualification={version:2,method:'public-web',status:'review',hotel:true,hotelSource:source,business:'unknown',businessSignal:'none',businessSource:source,businessDetail:'Resultado público indexado: '+description,feed:'unverified',feedSource:'',feedDetail:'El feed y la actividad actual no fueron comprobados. Un resultado indexado no confirma operación actual ni falta de contenido.',postsCount:null,lastPost:'',stories:'unverified',fit,score,label:'Coincide con filtros · revisar oportunidad',checkedAt:new Date().toISOString(),manual:false};
- const message=`Hola, equipo de ${name}. Soy ${settings.sender||'@'+handle(settings.lastSeed)}. Trabajo en ${profile.services}. Me gustaría conversar sobre una propuesta para su negocio. ¿Les interesa que les comparta más información? Si prefieren que no los contacte, me avisan y lo registro.`;
- return {handle:h,name,...geo,language:'es',source,message,reason:[qualification.businessDetail,fit,qualification.feedDetail].join(' · '),score,score_reason:'Afinidad por coincidencia de rubro, ubicación y señales públicas; no estima intención de compra.',qualification};
+ qualification.indexedPosts=indexedPosts;qualification.contentHint=sparseHint?'Pocas publicaciones en el índice; revisar estado actual':'';if(indexedPosts!==null)qualification.feedDetail+=' El índice informa '+indexedPosts+' publicaciones; el conteo actual no está verificado.';qualification.categorySignals=category;qualification.capacityToPay='unverified';if(category.length)qualification.label=sparseHint?'Alta categoría · pocas publicaciones indexadas · revisar':'Señales de alta categoría · revisar encaje';qualification.fit+=category.length?' Señales públicas: '+category.map(s=>s.label).join(', ')+'. Capacidad de pago sin verificar.':'';
+ const message=personalize(settings.template||defaults.template,{name,handle:h,city:geo.city},{...settings,sender:settings.sender||'@'+handle(settings.lastSeed),offer:profile.services});
+ const email=(description.match(/[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/i)||[])[0]||'';
+ return {email,handle:h,name,...geo,language:'es',source,message,reason:[qualification.businessDetail,qualification.fit,qualification.feedDetail].join(' · '),score,score_reason:'Afinidad por rubro, ubicación y categoría publicada; capacidad de pago e intención de compra sin verificar.',qualification};
+}
+export function rejectionReason(result,settings,known=[]){
+ const h=instagramHandle(result.url);if(!h)return 'invalidProfile';if(!isNewProspect(h,settings.lastSeed,known))return 'duplicates';
+ const text=result.title+' '+result.snippet;if(isDirectory(text))return 'directory';
+ if(!matchGeography(result.snippet.replace(/^.*?on\s+Instagram\s*:\s*/i,''),settings))return 'location';
+ if(!terms(settings.segment).some(t=>contains(text,t)))return 'sector';
+ if(settings.businessTier==='premium'&&!premiumSignals(text,result.url).length)return 'category';return 'other';
 }
 export function queryPlan(settings){
- const countries=COUNTRIES.filter(c=>settings.countries.includes(c.code));const cities=String(settings.cities||'').split(/[,;\n]+/).map(x=>x.trim()).filter(Boolean);const zones=cities.length?cities:[''];const plan=[];
- const variations=['','contacto','oficial','ubicación','WhatsApp','servicios','información','reservas','ventas','novedades','pedidos','negocio'];
- for(let pass=0;pass<variations.length;pass++)for(const city of zones)for(const country of countries){
-  const word=terms(settings.segment)[pass%terms(settings.segment).length];const q=`site:instagram.com "${word}" "${country.name}"${city?' "'+city+'"':''}${variations[pass]?' '+variations[pass]:''}`;
-  plan.push({q,country:country.name,city});
+ const countries=COUNTRIES.filter(c=>settings.countries.includes(c.code));const cities=String(settings.cities||'').split(/[,;\n]+/).map(x=>x.trim()).filter(Boolean);const plan=[];
+ const variants=settings.businessTier==='premium'?['lujo','4 estrellas','3 estrellas','5 estrellas','boutique spa','luxury']:['','reservas','oficial','contacto'];
+ for(const variant of variants){const maxZones=Math.max(...countries.map(c=>cities.length||((COUNTRY_CITIES[c.code]||[]).length+1)));
+  for(let zone=0;zone<maxZones;zone++)for(const country of countries){const zones=cities.length?cities:['',...(COUNTRY_CITIES[country.code]||[])];if(zone>=zones.length)continue;const city=zones[zone];const q=`site:instagram.com ${terms(settings.segment)[0]} ${variant} "${city||country.name}"${cities.length?' "'+country.name+'"':''}`.replace(/\s+/g,' ').trim();plan.push({q,country:country.name,city});}
  }
- return plan.slice(0,72);
+ const mixed=[];for(const p of plan){mixed.push({...p,q:p.q+' -inurl:reel -inurl:/p/ -inurl:explore'});if(settings.businessTier==='premium'&&settings.segment.includes('Hotel'))mixed.push({...p,q:p.q.replace('site:instagram.com ','')+' Instagram'});}return mixed.slice(0,180);
 }
 export class PublicWebDiscovery {
- constructor({read=fetchPublic,delayMs=5000,signal}={}){this.read=read;this.delayMs=delayMs;this.signal=signal;this.calls=0;this.lastSearch=0;}
+ constructor({read=fetchPublic,delayMs=5000,signal}={}){this.read=read;this.delayMs=delayMs;this.signal=signal;this.calls=0;this.lastSearch=0;this.websiteCache=new Map();}
  async search(q){
   if(this.signal?.aborted)throw Error('Búsqueda detenida.');
   const wait=Math.max(0,this.lastSearch+this.delayMs-Date.now());if(wait)await new Promise(r=>setTimeout(r,wait));
@@ -110,6 +127,8 @@ export class PublicWebDiscovery {
   if(/anomaly\.js|anomaly-modal|g-recaptcha|unusual traffic|verify you are human/i.test(page.html)){const e=Error('El buscador pidió una verificación humana. Se detuvo la búsqueda; los resultados obtenidos están guardados. Probá más tarde.');e.code='WEB_BLOCKED';throw e;}
   return parseSearchResults(page.html);
  }
+ canEnrich(result){try{return !/(^|\.)(instagram\.com|facebook\.com|youtube\.com|booking\.com|tripadvisor\.[a-z.]+)$/.test(new URL(result.url).hostname);}catch{return false;}}
+ async enrich(result){if(instagramHandle(result.url))return [result];if(!this.canEnrich(result))return [];if(this.websiteCache.has(result.url))return this.websiteCache.get(result.url);let profiles=[];try{this.calls++;profiles=websiteProfiles(await this.read(result.url,{signal:this.signal,timeoutMs:6000}),result);}catch{}this.websiteCache.set(result.url,profiles);return profiles;}
  async profile(seed,settings){
   if(settings.offer?.trim())return {services:settings.offer.trim().slice(0,1000),summary:'Oferta indicada por vos.',source:'',fromContext:true,method:'public-web'};
   const h=handle(seed),results=await this.search('"'+h+'" Instagram');const result=results.find(r=>instagramHandle(r.url)===h);const services=result&&inferServices(result.title+' '+result.snippet);
@@ -118,7 +137,7 @@ export class PublicWebDiscovery {
  }
 }
 export async function discoverWeb({store,seed,web=new PublicWebDiscovery(),progress=()=>{},save=async()=>{},cancelled=()=>false}){
- const settings={...store.settings(),lastSeed:seed};const known=new Set(store.list().map(l=>l.handle));const state={status:'running',method:'public-web',found:0,qualified:0,review:0,target:Math.min(100,settings.maxResults||100),stage:'Identificando tu oferta en la web pública',summary:'',queries:0,usage:null,startedAt:new Date().toISOString()};
+ const settings={...store.settings(),lastSeed:seed};const known=new Set(store.list().map(l=>l.handle));const state={status:'running',method:'public-web',found:0,qualified:0,review:0,target:Math.min(100,settings.maxResults||100),businessTier:settings.businessTier||'all',stage:'Identificando tu oferta en la web pública',summary:'',queries:0,pages:0,scanned:0,rejected:{},ids:[],usage:null,startedAt:new Date().toISOString()};
  const emit=()=>progress({...state});emit();
  try{
   const profile=await web.profile(seed,settings);state.profile=profile;emit();
@@ -126,12 +145,20 @@ export async function discoverWeb({store,seed,web=new PublicWebDiscovery(),progr
   for(const [index,query]of plan.entries()){
    if(cancelled()||state.found>=state.target)break;
    state.stage=`Buscando ${settings.segment} en ${query.city?[query.city,query.country].join(', '):query.country} · consulta ${index+1}/${plan.length}`;state.queries=index+1;emit();
-   const results=await web.search(query.q);if(cancelled())break;
-   const leads=[];for(const result of results){const lead=webCandidate(result,settings,profile,[...known]);if(lead){known.add(lead.handle);leads.push(lead);}if(leads.length>=state.target-state.found)break;}
-   const count=ingest(store,leads);state.found+=count.added;state.review+=count.added;emit();if(count.added)await save().catch(()=>{});
+   let results=await web.search(query.q);const seenPages=new Set();
+   for(let page=0;page<3&&state.pages<540&&!cancelled()&&state.found<state.target;page++){
+    if(!results.length)break;const fingerprint=results.map(r=>r.url).join('|');if(seenPages.has(fingerprint))break;seenPages.add(fingerprint);state.pages++;
+    const leads=[],expanded=results.filter(r=>instagramHandle(r.url));const sites=web.enrich?results.filter(r=>!instagramHandle(r.url)&&(!web.canEnrich||web.canEnrich(r))).filter((r,i,a)=>a.findIndex(v=>v.url===r.url)===i).slice(0,3):[];
+    if(sites.length){state.stage='Revisando '+sites.length+' fuentes públicas del rubro';emit();const checked=await Promise.allSettled(sites.map(r=>web.enrich(r)));for(const result of checked)if(result.status==='fulfilled')expanded.push(...result.value);}
+    for(const result of expanded){state.scanned++;const lead=webCandidate(result,settings,profile,[...known]);if(lead){known.add(lead.handle);leads.push(lead);}else{const why=rejectionReason(result,settings,[...known]);state.rejected[why]=(state.rejected[why]||0)+1;}if(leads.length>=state.target-state.found)break;}
+    const count=ingest(store,leads);state.found+=count.added;state.review+=count.added;for(const lead of leads){const id=store.db.prepare('SELECT id FROM leads WHERE handle=?').get(lead.handle)?.id;if(id)state.ids.push(Number(id));}emit();if(count.added)await save().catch(()=>{});
+    if(page===2||state.found>=state.target||cancelled()||!web.nextPage)break;results=await web.nextPage();
+   }
+   if(state.pages>=540)break;
   }
   state.status=cancelled()?'paused':'completed';state.stage=cancelled()?'Búsqueda detenida':`${state.found} candidatos encontrados en la web`;
  }catch(e){state.status=cancelled()?'paused':'failed';state.error=cancelled()?'':e.message;state.stage=cancelled()?'Búsqueda detenida':'La búsqueda se detuvo; se conservaron los candidatos encontrados.';}
- state.summary=`Búsqueda web sin API: ${state.found} candidatos con rubro y ubicación identificados en resultados públicos. Revisá Por verificar: falta comprobar actividad actual, feed y encaje específico con tu oferta. ${state.found<state.target?'No se completó el objetivo de '+state.target+'; no se rellenaron faltantes.':''}`;
+ state.outcome=state.found>=state.target?'target-reached':'partial';
+ state.summary=`${state.found}/${state.target} candidatos · ${state.queries} consultas · ${state.pages} páginas · ${state.scanned} resultados examinados. ${state.rejected.duplicates||0} repetidos; ${state.rejected.location||0} sin ubicación coincidente; ${state.rejected.category||0} sin señales de alta categoría; ${state.rejected.directory||0} directorios descartados. Actividad, encaje y capacidad de pago requieren revisión. ${state.found<state.target?'Objetivo incompleto: no se inventaron contactos.':''}`;
  state.usage={webRequests:web.calls,paidApiCalls:0};emit();store.setJob('lastSearch',{...state,seed,at:new Date().toISOString()});return state;
 }

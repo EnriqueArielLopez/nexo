@@ -1,8 +1,8 @@
-NEXO · CLIENTES 3.5.0
+NEXO · CLIENTES 3.6.0
 
 BUSCAR SIN API Y CONTINUAR SI EL BUSCADOR PIDE VERIFICACIÓN
 1. Entrá a Nexo. Pegá tu Instagram y elegí países y rubro en Filtros.
-2. Pulsá Buscar 100 clientes. Se abre una ventana visible de Microsoft Edge.
+2. Pulsá Buscar 100 clientes. Edge trabaja minimizado con un perfil propio.
 3. Si el buscador pide una verificación humana, completala vos en esa ventana.
 4. Volvé a Nexo y pulsá Ya completé la verificación · continuar.
    Nexo lee la misma página para continuar sin perder la validación.
@@ -22,4 +22,23 @@ idioma, feed y oportunidad antes de contactar. La búsqueda no envía mensajes.
 Si no se identifica tu oferta, completá Qué ofrecés en Filtros.
 
 Datos: %LOCALAPPDATA%\NexoClientes\Datos. Se conservan cuentas y contactos.
-Para compartir usá Nexo-para-compartir-3.5.0.zip, no la carpeta Datos.
+Para compartir usá Nexo-para-compartir-3.6.0.zip, no la carpeta Datos.
+
+CATEGORÍA, LIMPIEZA Y CONTACTO
+- Filtros permite alta categoría (hoteles de 3 estrellas en adelante y señales
+  equivalentes de categoría) o todas. La capacidad de pago es una estimación;
+  el feed necesita revisión. Se consultan ciudades, páginas siguientes y webs
+  que publican datos del hotel y enlazan su cuenta. No se adivinan cuentas.
+- Limpiar resultados archiva candidatos web sin envíos. Restaurar los recupera.
+  Historial, bajas y programados se conservan.
+- Mensaje base permite escribir una vez y personalizar con {cliente}, {hotel},
+  {cuenta}, {ciudad}, {remitente} y {servicio}.
+- Seleccioná todos: la tanda toma primero los de mayor afinidad hasta el cupo
+  disponible (por defecto 5 Instagram y 20 emails por día). Revisá la vista previa.
+- Sin conexión oficial, Instagram prepara cada texto para copiar y abrir el
+  perfil. Enviá desde tu cuenta y luego pulsá Ya envié. Abrir no marca enviado.
+- Email requiere configurar tu casilla en Ajustes. Podés adjuntar tu propuesta.
+  Solo se envía a direcciones disponibles, con confirmación de la tanda.
+- Excel contiene todos los resultados activos, no solo la tanda. Nexo actualiza
+  Clientes.xlsx después de registrar un envío. Descargalo nuevamente para
+  actualizar una copia descargada antes. Los enviados no vuelven como nuevos.

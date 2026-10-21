@@ -1,4 +1,5 @@
 import {discoverWeb} from './web-discovery.mjs';
+import {prepareBatch,approveBatch} from './batches.mjs';
 import {SearchBrowser,BrowserWebDiscovery,waitForHuman} from './browser-search.mjs';
 import {claudeSearchRequest} from './campaign.mjs';
 import http from 'node:http';
@@ -17,7 +18,7 @@ import {exportWorkbook} from './export-portable.mjs';
 import {NexoAssistant,campaignContext,connectionRequest} from './assistant.mjs';
 import {emailLead,sendMail,attachmentDir,ATTACHMENT_TYPES} from './mailer.mjs';
 import {runSchedules} from './scheduler.mjs';
-const BUILD='3.5.0';
+const BUILD='3.6.0';
 const root=path.dirname(fileURLToPath(import.meta.url));
 const data=path.resolve(process.env.HOTEL_DATA_DIR||path.join(root,'data'));
 const port=Number(process.env.PORT||18761),origin=`http://127.0.0.1:${port}`;
@@ -35,7 +36,7 @@ function state(c){const s=snapshot(c),account=c.ig?.account;const own=c.store.co
 async function runSearch(c,seed){let cancel=false;const settings=c.store.settings(),ai=new Claude(c.key,settings.model);c.search={status:'running',found:0,target:100,stage:'Analizando tu oferta',cancel:false};const fingerprint=JSON.stringify([seed,settings.offer,settings.model]);const cached=c.store.job('providerProfile');const useCache=cached?.fingerprint===fingerprint&&Date.now()-Date.parse(cached.at)<7*864e5;if(useCache)ai.profile=cached.profile;await discover100({store:c.store,seed,prepare:async()=>{const p=await ai.analyzeProfile(seed,settings);if(!useCache)c.store.setJob('providerProfile',{fingerprint,profile:p,at:new Date().toISOString()});return p;},usage:()=>({...ai.usage}),search:(s,filters,exclude)=>ai.search(s,filters,exclude),progress:state=>{cancel=cancel||c.search.cancel;c.search={...state,cancel};},cancelled:()=>cancel||c.search.cancel,save:()=>excel(c)});}
 async function runWebSearch(c,seed){
  const controller=new AbortController();c.webAbort=controller;let cancel=false;
- c.search={status:'running',method:'public-web',found:0,target:100,stage:'Abriendo la ventana del buscador',cancel:false};
+ c.search={status:'running',method:'public-web',found:0,target:100,stage:'Preparando el buscador en segundo plano',cancel:false};
  c.searchBrowser=c.searchBrowser||new SearchBrowser(path.join(data,'buscador',c.user.id));
  const web=new BrowserWebDiscovery({browser:c.searchBrowser,signal:controller.signal,onChallenge:info=>waitForHuman(controller.signal,resume=>{
   c.search={...c.search,status:'waiting',stage:'Completá la verificación en la ventana del buscador',error:'',humanRequired:true,browserQuery:info.query};
@@ -56,7 +57,7 @@ try{if(req.headers.host!==`127.0.0.1:${port}`||req.headers.origin&&req.headers.o
   if(route==='/api/search-request')return json(res,{request:claudeSearchRequest(c.store.settings()),mode:c.key?'api':'claude-app'});
   if(route==='/api/state')return json(res,state(c));
   if(route==='/api/excel'){await excel(c);res.writeHead(200,{'content-type':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet','content-disposition':'attachment; filename="Clientes-Nexo.xlsx"'});return res.end(await fs.readFile(path.join(c.dir,'Clientes.xlsx')));}
-  if(route==='/api/backup'){res.writeHead(200,{'content-type':'application/json','content-disposition':'attachment; filename="Nexo-respaldo.json"'});return res.end(JSON.stringify({format:'nexo-backup-v1',...snapshot(c)}));}
+  if(route==='/api/backup'){res.writeHead(200,{'content-type':'application/json','content-disposition':'attachment; filename="Nexo-respaldo.json"'});return res.end(JSON.stringify({format:'nexo-backup-v1',...snapshot(c),leads:c.store.list({includeArchived:true})}));}
   return json(res,{error:'No encontrado'},404);
  }
  if(req.method!=='POST')return json(res,{error:'Método no permitido'},405);if(req.headers['x-csrf-token']!==csrf||!String(req.headers['content-type']).startsWith('application/json'))return json(res,{error:'Solicitud inválida'},403);const v=await body(req);
@@ -69,11 +70,15 @@ try{if(req.headers.host!==`127.0.0.1:${port}`||req.headers.origin&&req.headers.o
   case '/api/assistant/approved':{if(!c.key)throw Error('Conectá Claude para continuar.');if(c.assistant.busy)throw Error('Pausá el pedido anterior antes de autorizar.');c.assistant.authorize(v.ids,v.confirm);const result=await c.assistant.run('Iniciá los envíos autorizados que acabo de revisar.',{authorized:true,context:campaignContext({store:c.store,instagram:c.ig?.account,search:c.search,queue:c.queue.state})});return json(res,{...result,state:state(c)});}
   case '/api/assistant/pause':c.assistant.cancel();break;
   case '/api/settings':c.store.saveSettings(v);break;
+  case '/api/results/clear':{if(['running','waiting'].includes(c.search.status))throw Error('Detené la búsqueda antes de limpiar.');const archived=c.store.archiveResults();c.search={status:'idle',found:0,target:100,stage:''};c.store.setJob('lastSearch',c.search);await excel(c);return json(res,{archived,state:state(c)});}
+  case '/api/results/restore':c.store.restoreResults();await excel(c);break;
+  case '/api/batch/preview':return json(res,prepareBatch(c.store,v.ids,v.channel));
+  case '/api/batch/manual':{if(v.reviewed!==true)throw Error('Revisá los perfiles, su oportunidad y los textos.');const batch=prepareBatch(c.store,v.ids,'instagram');if(v.token!==batch.token)throw Error('La tanda cambió. Abrí la vista previa nuevamente.');approveBatch(c.store,batch);return json(res,{...batch,state:state(c)});}
   case '/api/claude':{const key=String(v.key||'').trim();if(!key)throw Error('Ingresá la clave de API de Claude.');try{await new Claude(key,c.store.settings().model).call(connectionRequest(campaignContext({store:c.store,instagram:c.ig?.account,search:c.search,queue:c.queue.state}))); }catch(e){throw Error(e.status===401?'La clave no es válida. Copiá una nueva desde tu cuenta de Anthropic.':e.status===429?'Anthropic no habilitó la conexión. Revisá saldo y límite de uso.':'No se pudo conectar. Revisá Internet, saldo y permisos de tu cuenta de Anthropic.');}c.key=key;c.secret.key=key;await saveConnection(c,v.remember===true);break;}
   case '/api/instagram':{const ig=new Instagram(String(v.token||'').trim(),c.store.settings().graphVersion,{budget,profile:user.id});await ig.connect();c.ig=ig;for(const l of c.store.list().filter(l=>l.dnc))budget.doNotContact(ig.account.id,l.handle,true);c.secret.igToken=ig.token;await saveConnection(c,v.remember===true);break;}
   case '/api/email-config':{const user=String(v.user||'').trim(),pass=String(v.pass||'').replace(/\s+/g,'');c.store.saveSettings({smtpHost:v.host,smtpPort:Number(v.port),smtpUser:user,emailFrom:v.fromName,...('subject'in v?{emailSubject:v.subject}:{})});if(pass){await sendMail({...smtp(c),pass},null,{});c.secret.smtpPass=pass;await saveConnection(c,v.remember!==false);}else if(!c.secret.smtpPass)throw Error('Ingresá la contraseña de aplicación de tu email.');break;}
   case '/api/attachment':{const dir=attachmentDir(c.dir);if(v.remove){const old=c.store.settings().attachment;if(old)await fs.rm(path.join(dir,path.basename(old)),{force:true});c.store.saveSettings({attachment:''});break;}const name=path.basename(String(v.name||'')).replace(/[^\p{L}\p{N} ._()-]/gu,'_').slice(0,120);if(!ATTACHMENT_TYPES.includes(path.extname(name).toLowerCase()))throw Error('Adjuntá un PDF, Word, PowerPoint, Excel o imagen.');const data=Buffer.from(String(v.content||''),'base64');if(!data.length||data.length>8e6)throw Error('El adjunto debe pesar hasta 8 MB.');await fs.mkdir(dir,{recursive:true});const old=c.store.settings().attachment;if(old&&old!==name)await fs.rm(path.join(dir,path.basename(old)),{force:true});await fs.writeFile(path.join(dir,name),data);c.store.saveSettings({attachment:name});break;}
-  case '/api/email/send':{if(v.confirm!==true)throw Error('Confirmá los emails antes de enviarlos.');if(!Array.isArray(v.ids)||!v.ids.length||v.ids.length>50)throw Error('Elegí entre 1 y 50 clientes.');const sent=[],failed=[];for(const [i,id]of v.ids.entries()){try{c.store.update(Number(id),{approved:true});sent.push((await emailLead(c.store,c.dir,smtp(c),Number(id))).hotel);}catch(e){failed.push((c.store.get(Number(id))?.name||'Cliente')+': '+e.message);if(/Cupo|contraseña|Configurá|conectar/.test(e.message))break;}if(i<v.ids.length-1)await new Promise(r=>setTimeout(r,4000));}await excel(c);return json(res,{sent,failed,state:state(c)});}
+  case '/api/email/send':{if(v.confirm!==true)throw Error('Confirmá los emails antes de enviarlos.');const batch=v.reviewed===true?prepareBatch(c.store,v.ids,'email'):null;if(!batch&&(!Array.isArray(v.ids)||!v.ids.length||v.ids.length>50))throw Error('Elegí entre 1 y 50 clientes.');if(batch){if(v.token!==batch.token)throw Error('La tanda cambió. Abrí la vista previa nuevamente.');approveBatch(c.store,batch);}const sendIds=batch?batch.items.map(l=>l.id):v.ids;const sent=[],failed=[];for(const [i,id]of sendIds.entries()){try{c.store.update(Number(id),{approved:true});sent.push((await emailLead(c.store,c.dir,smtp(c),Number(id))).hotel);}catch(e){failed.push((c.store.get(Number(id))?.name||'Cliente')+': '+e.message);if(/Cupo|contraseña|Configurá|conectar/.test(e.message))break;}if(i<sendIds.length-1)await new Promise(r=>setTimeout(r,4000));}await excel(c);return json(res,{sent,failed,state:state(c)});}
   case '/api/schedule':{if(v.confirm!==true)throw Error('Confirmá la programación.');if(!Array.isArray(v.ids)||!v.ids.length||v.ids.length>200)throw Error('Elegí entre 1 y 200 clientes.');if(!['email','instagram'].includes(v.channel))throw Error('Elegí email o Instagram.');const r=c.store.schedule(v.ids,v.channel,v.at);return json(res,{...r,state:state(c)});}
   case '/api/schedule/cancel':c.store.cancelSchedule(v.id);break;
   case '/api/disconnect':c.assistant.cancel();c.queue.pause();c.key='';c.ig=null;c.secret={};accounts.save(user.id,'');break;

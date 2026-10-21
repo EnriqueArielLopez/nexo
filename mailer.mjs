@@ -1,3 +1,4 @@
+import {personalize} from './templates.mjs';
 import tls from 'node:tls';
 import net from 'node:net';
 import fs from 'node:fs/promises';
@@ -10,7 +11,7 @@ const wrap=s=>s.replace(/.{1,76}/g,'$&\r\n');
 const TYPES={'.pdf':'application/pdf','.png':'image/png','.jpg':'image/jpeg','.jpeg':'image/jpeg','.doc':'application/msword','.docx':'application/vnd.openxmlformats-officedocument.wordprocessingml.document','.ppt':'application/vnd.ms-powerpoint','.pptx':'application/vnd.openxmlformats-officedocument.presentationml.presentation','.xlsx':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'};
 export const ATTACHMENT_TYPES=Object.keys(TYPES);
 export function attachmentDir(dir){return path.join(dir,'adjuntos');}
-export function fill(text,lead,settings){return String(text||'').replaceAll('{hotel}',lead.name||lead.handle).replaceAll('{ciudad}',lead.city||'').replaceAll('{remitente}',settings.sender||'').replaceAll('{servicio}',settings.offer||'');}
+export const fill=personalize;
 export async function compose({from,fromName,to,subject,text,attachment}){
  const boundary='nexo-'+randomBytes(12).toString('hex');const domain=from.split('@')[1]||'localhost';
  const head=[`From: ${fromName?header(fromName)+' ':''}<${from}>`,`To: <${to}>`,`Subject: ${header(subject)}`,`Date: ${new Date().toUTCString()}`,`Message-ID: <${randomBytes(16).toString('hex')}@${domain}>`,'MIME-Version: 1.0'];
