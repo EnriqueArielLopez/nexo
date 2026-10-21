@@ -1,35 +1,38 @@
-NEXO · CLIENTES
+NEXO · CLIENTES 3.1
 
-1. Abrí Nexo.exe (extraé primero toda la carpeta si recibiste un ZIP).
-2. Creá tu espacio local. Tu sesión y tus clientes quedan guardados en esta PC.
-3. Pegá el enlace de TU perfil de Instagram y elegí los países.
-4. Buscá hasta 100 hoteles. Podés usar tu Claude abierto copiando la búsqueda
-   y pegando su respuesta, o conectar una API key para hacerlo automáticamente.
-5. Revisá las propuestas. Al registrar un envío, el cliente sale de Pendientes
-   y queda excluido durante dos meses. Excel es una copia opcional de tu planilla.
+1. Abrí Nexo y entrá a tu espacio local.
+2. Pegá el enlace de TU Instagram y elegí los países.
+3. La primera vez, elegí Conectar asistente: abrí Anthropic, creá una clave
+   de acceso con saldo y pegala en Nexo. Se guarda cifrada si lo elegís.
+   Después las búsquedas y propuestas llegan directamente a tu planilla.
+4. Buscá hasta 100 hoteles. Priorizamos hoteles operativos con señales
+   comerciales y contenido escaso, incompleto o desactualizado con evidencia.
+5. Revisá cada oportunidad y su propuesta antes de contactar.
 
-ENVÍOS
-La cola automática solo puede enviar a conversaciones permitidas por Meta:
-mensaje entrante en las últimas 24 horas, cuenta profesional y token oficial.
-No automatiza mensajes en frío. Los cupos por día y mes son presupuestos tuyos;
-no existe un número diario universal que garantice evitar bloqueos.
-La cola requiere Nexo abierto. Al reiniciar, revisá y reanudá la cola pausada.
-Registrá los mensajes que envíes manualmente fuera de Nexo.
+POR VERIFICAR
+Si el feed o la actividad comercial no se pueden comprobar, el hotel no pasa
+ a Prioritarios. Abrí su ficha, revisalo y confirmá solo lo que comprobaste.
+Historias no visibles no significan falta de actividad. No se prometen ventas.
+Si tu oferta no puede leerse desde Instagram, completá Qué ofrecés en Filtros.
 
-DATOS Y RESPALDOS
-Los datos se guardan en %LOCALAPPDATA%\NexoClientes\Datos.
-Cada usuario tiene su propia planilla. Son cuentas locales, sin nube compartida.
-En tu nombre de usuario > Descargar respaldo podés llevar clientes e historial
- a otra PC e importarlos allí. No incluye contraseñas ni conexiones.
-Las conexiones recordadas se cifran con la cuenta de Windows de esta PC.
-Conservá tu contraseña: esta versión no tiene recuperación por email.
-Cerrar la ventana de la app también cierra Nexo tras unos segundos.
+CLAUDE
+No hay que copiar respuestas ni entender formatos técnicos.
+Una conexión API con saldo permite buscar automáticamente desde Nexo.
+La conexión se configura en Anthropic. Max/Team elegibles pueden reclamar
+créditos API: el enlace está en Ya tengo una suscripción de Claude.
+No pegues tu clave en chats. Podés borrarla desde Ajustes en Nexo.
 
-COMPARTIR
-Compartí el ZIP limpio completo, nunca tu carpeta de datos ni solo Nexo.exe.
-La otra persona extrae todo, abre Nexo.exe y configura su propio espacio.
-Windows 10/11 x64, .NET Framework 4.8 y navegador actualizado.
-Incluye Node; no necesita instalar Node, Python, Excel ni Codex.
-La API de Claude requiere saldo aparte de la suscripción de Claude.
-El ejecutable no está firmado. Probado en esta PC; no en otra PC física.
-La demo contiene perfiles ficticios y no envía mensajes reales.
+ENVÍOS Y EXCEL
+La cola oficial solo envía a conversaciones permitidas por Meta, con mensaje
+entrante en las últimas 24 horas. No envía propuestas en frío automáticamente.
+Los cupos diarios/mensuales son internos; no garantizan evitar bloqueos.
+Registrá los envíos manuales: salen de Prioritarios durante dos meses.
+Excel es opcional y contiene el motivo y la evidencia de cada oportunidad.
+
+DATOS Y COMPARTIR
+Cuentas locales, sin nube: %LOCALAPPDATA%\NexoClientes\Datos.
+Descargá un respaldo desde tu usuario para trasladar contactos e historial.
+Compartí el ZIP limpio completo; otra persona extrae todo y abre Nexo.exe.
+Necesita Windows10/11 x64, .NET4.8 y navegador actualizado; incluye Node.
+El ejecutable no está firmado. No probado en otra PC física.
+La prueba local usa hoteles ficticios y no envía mensajes reales.
