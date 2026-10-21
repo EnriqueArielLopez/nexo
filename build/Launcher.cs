@@ -12,7 +12,13 @@ using System.Runtime.InteropServices;
 static class Launcher {
     internal const string Url = "http://127.0.0.1:18761";
     static string Root = AppDomain.CurrentDomain.BaseDirectory;
-    internal static bool Ready() { try { var h=Read("/api/health");return h.Contains("\"app\":\"nexo\"")&&h.Contains("\"version\":\"3.2.0\""); } catch { return false; } }
+    internal static bool IsNexoHealth(string json) {
+        try {
+            var health=new JavaScriptSerializer().DeserializeObject(json) as System.Collections.Generic.Dictionary<string,object>;
+            return health!=null&&health.ContainsKey("app")&&object.Equals(health["app"],"nexo")&&health.ContainsKey("ok")&&object.Equals(health["ok"],true);
+        } catch { return false; }
+    }
+    internal static bool Ready() { try { return IsNexoHealth(Read("/api/health")); } catch { return false; } }
     delegate bool EnumCallback(IntPtr h,IntPtr l);
     [DllImport("user32.dll")] static extern bool EnumWindows(EnumCallback callback,IntPtr l);
     [DllImport("user32.dll",CharSet=CharSet.Unicode)] static extern int GetWindowText(IntPtr h,StringBuilder text,int count);
