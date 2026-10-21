@@ -1,12 +1,12 @@
 param([string]$Destination=(Join-Path $env:LOCALAPPDATA 'Programs\NexoClientes'))
 $ErrorActionPreference='Stop'
-$source=Join-Path $PSScriptRoot 'release-v31\Nexo'
-$archive=Join-Path $PSScriptRoot 'release-v31\Nexo-Windows-portable.zip'
+$source=Join-Path $PSScriptRoot 'release-v32\Nexo'
+$archive=Join-Path $PSScriptRoot 'release-v32\Nexo-Windows-portable.zip'
 $desktop=[Environment]::GetFolderPath('Desktop')
 $dataRoot=Join-Path $env:LOCALAPPDATA 'NexoClientes\Datos'
 if(Test-Path -LiteralPath $Destination){throw "Ya existe la instalación $Destination; no se sobrescribió."}
 if(Test-Path -LiteralPath $dataRoot){throw "Ya existen datos $dataRoot; no se sobrescribieron."}
-if(-not(Test-Path -LiteralPath (Join-Path $source 'Nexo.exe'))){throw 'Generar primero release-v31\Nexo.'}
+if(-not(Test-Path -LiteralPath (Join-Path $source 'Nexo.exe'))){throw 'Generar primero release-v32\Nexo.'}
 if(Get-ChildItem -LiteralPath $source -Recurse -Attributes ReparsePoint){throw 'La distribución contiene enlaces externos.'}
 $archiveRoot=[IO.Path]::GetFullPath((Join-Path $PSScriptRoot ('retirados\'+(Get-Date -Format 'yyyyMMdd-HHmmss'))))
 if(-not $archiveRoot.StartsWith([IO.Path]::GetFullPath((Join-Path $PSScriptRoot 'retirados'))+'\',[StringComparison]::OrdinalIgnoreCase)){throw 'Destino de archivo inválido.'}

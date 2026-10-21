@@ -1,4 +1,4 @@
-# Nexo · Clientes 3.1
+# Nexo · Clientes 3.2
 
 Aplicación local para encontrar hasta100 hoteles hispanohablantes a partir del
 Instagram del proveedor. La búsqueda interpreta la oferta, revisa fuentes
@@ -21,6 +21,41 @@ muestra la oportunidad, señales de operación comercial y fuentes del feed.
 La propuesta es editable. Los contactos Por verificar requieren confirmación
 explícita del usuario antes de habilitar el contacto desde la interfaz.
 Las cuentas y datos son locales; no hay sincronización con nube.
+
+## Claude como asistente de la aplicación
+
+El botón Pedirle a Claude abre una conversación dentro de Nexo. Incluye accesos
+Buscar hoteles, Preparar envíos, Ver historial y Mi Excel, además de pedidos
+libres. Al conectar se envían al modelo las reglas, perfil, oferta, países,
+plantilla, cupos y estado resumido. Cada pedido vuelve a enviar configuración
+vigente; no depende de una conversación abierta en la app externa de Claude.
+No se incluyen API keys ni tokens Meta en el contexto del modelo.
+
+`assistant.mjs` implementa client tools de la API oficial. Claude puede consultar
+contactos e historial, ejecutar la búsqueda, editar propuestas, preparar selección,
+iniciar una cola autorizada, pausarla, detener búsqueda y regenerar Excel.
+Nexo ejecuta las acciones y responde con sus recibos. La respuesta visible se
+compone desde resultados reales de las herramientas; no se acepta como prueba
+una afirmación del modelo de que envió mensajes. La bitácora es por usuario y
+persiste en su SQLite. Se muestran las últimas6interacciones de hasta12guardadas.
+
+Una orden en el chat no concede permiso de envío. Preparar propone hasta100
+hoteles calificados, excluyendo bajas, espera y envíos inciertos. La app muestra
+textos/destinatarios y el usuario confirma una selección. El servidor vincula
+esa autorización, por cinco minutos y un solo uso, a cuenta Instagram, ids y
+hash de cada texto. El modelo no puede fabricar ese permiso ni elevar cupos.
+Editar una propuesta revoca aprobación y autorización pendiente. Antes de iniciar
+se sincroniza Instagram; la cola vuelve a comprobar Meta/cupos/historial en cada
+envío. Cambiar cuenta, texto o estado del contacto invalida la selección.
+
+Cada pedido permite hasta5llamadas de control a Claude, con contexto resumido y
+salida limitada. La búsqueda solo se ejecuta una vez por pedido; herramientas
+idénticas repetidas devuelven el recibo anterior. Autorizar cola termina tras
+iniciarla: no gasta llamadas de Claude por cada envío ni por cada tick del reloj.
+Pausar o cerrar sesión cancela futuras acciones del asistente y pausa la cola.
+Un envío ya en curso puede finalizar; revisar su recibo, no asumir que se anuló.
+No se expone acceso de Claude a archivos arbitrarios, navegador, comandos,
+contraseñas, configuración de permisos ni eliminación del historial.
 
 ## Criterio de prioridad
 
@@ -109,18 +144,18 @@ Branch `codex/hotel-prospectos`, sin remoto ni main configurados. Repositorio
 local independiente, sin despliegues Development/Producción ni cambios de
 infraestructura compartida. No se tocaron sus configuraciones.
 
-`node --test test.mjs`: 29 pruebas de historial, sesiones, Excel, cola, fuentes,
+`node --test test.mjs`: 38 pruebas de historial, sesiones, Excel, cola, fuentes,
 criterios de feed/operación y detección de servicios. `npm start`: PORT y
 HOTEL_DATA_DIR para aislar QA. El ejecutable usa puerto18761 y permite
 NEXO_DATA_DIR solo como override de QA. Solo escucha en127.0.0.1, valida
 Host/Origin y CSRF. Límites de importación8MB/25MB descomprimidos.
 
-`build-portable.ps1 -OutputDirectory release-v31/Nexo` compila y genera ZIP
+`build-portable.ps1 -OutputDirectory release-v32/Nexo` compila y genera ZIP
 limpio. `install-desktop.ps1` primera instalación; `update-desktop.ps1` conserva
 Datos y el acceso, archiva versión anterior y actualiza el ZIP del escritorio.
 Archivos de pruebas, distribución y retirados quedan fuera de Git.
 
-Validación del21/10/2026: 29 tests, búsqueda completa simulada de100 con80
+Validación del21/10/2026: 38 tests, búsqueda completa simulada de100 con80
 prioritarios/20por verificar, conexión guiada sin formatos técnicos y error de
 clave legible. Confirmación manual de revisión y persistencia de evaluación.
 Sin búsquedas de pago ni mensajes reales; falta validar con clave del titular,
@@ -143,3 +178,27 @@ También se recargó la pestaña que el usuario tenía abierta: retenía la inte
 anterior aunque el servidor ya se había actualizado. Ahora muestra el login
 actual. Los accesos y datos locales se conservaron. Búsqueda y envío real siguen
 pendientes de conexión del titular; no se gastó saldo durante las pruebas.
+
+## Validación del asistente — 21/10/2026, Local
+
+38 tests aprobados. Smoke completo con Claude/Meta simulados: configuración
+entregada al conectar,100 candidatos ficticios,80 propuestas preparadas, rechazo
+de envío sin autorización, edición de propuesta, cola autorizada de un cliente,
+recibo Meta ficticio, historial, espera de dos meses y tachado en Excel. Excel
+validado con lector independiente (100 contactos,14columnas y recibo en Historial).
+Acceso sin sesión al nuevo endpoint devuelve401. Prueba de UI del asistente con
+bitácora y botones, sin formatos técnicos. No hubo llamadas de pago ni envíos
+reales; todavía se requiere validar con credenciales/permisos del titular.
+
+Instalador y ZIP3.2 actualizados conservando cuentas e historial. Respaldo del
+programa y Datos antes de actualizar, fuera de Git. Solo Local; no se cambió
+infraestructura compartida, Development ni Producción. Sin remoto para push.
+
+Contrato de herramientas oficial:
+https://platform.claude.com/docs/en/agents-and-tools/tool-use/define-tools
+La instalación activa quedó verificada como3.2.0 por health. Código instalado y
+ZIP del escritorio coinciden con los archivos finales. ZIP limpio28 entradas;
+el escritorio conserva solo Nexo.lnk y Nexo-para-compartir.zip. Respaldo previo:
+retirados/actualizacion-20261021-041020. La pestaña anterior no pudo recargarse
+por restricción del control del navegador; usar el acceso Nexo del escritorio.
+Captura de la prueba ficticia en qa/nexo-32-asistente.png (fuera de Git).

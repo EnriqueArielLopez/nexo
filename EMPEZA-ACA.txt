@@ -1,13 +1,19 @@
-NEXO · CLIENTES 3.1
+NEXO · CLIENTES 3.2
 
 1. Abrí Nexo y entrá a tu espacio local.
 2. Pegá el enlace de TU Instagram y elegí los países.
-3. La primera vez, elegí Conectar asistente: abrí Anthropic, creá una clave
+3. La primera vez, elegí Conectar Claude: abrí Anthropic, creá una clave
    de acceso con saldo y pegala en Nexo. Se guarda cifrada si lo elegís.
    Después las búsquedas y propuestas llegan directamente a tu planilla.
 4. Buscá hasta 100 hoteles. Priorizamos hoteles operativos con señales
    comerciales y contenido escaso, incompleto o desactualizado con evidencia.
-5. Revisá cada oportunidad y su propuesta antes de contactar.
+5. Pedirle a Claude abre el asistente dentro de Nexo. Ejemplos:
+   - Buscá 100 hoteles para mi oferta y prepará las propuestas.
+   - Prepará los prioritarios para revisar antes de enviar.
+   - Mostrame el historial o generá mi Excel.
+6. Revisá la selección preparada y confirmala. Claude puede iniciar esa cola;
+   Nexo controla permisos, cupos, duplicados y registra los envíos confirmados.
+   Pausar detiene futuras acciones. Las tareas requieren Nexo abierto.
 
 POR VERIFICAR
 Si el feed o la actividad comercial no se pueden comprobar, el hotel no pasa
@@ -16,7 +22,9 @@ Historias no visibles no significan falta de actividad. No se prometen ventas.
 Si tu oferta no puede leerse desde Instagram, completá Qué ofrecés en Filtros.
 
 CLAUDE
+Claude recibe automáticamente tu perfil, filtros y reglas.
 No hay que copiar respuestas ni entender formatos técnicos.
+La ventana externa de Claude no necesita estar abierta.
 Una conexión API con saldo permite buscar automáticamente desde Nexo.
 La conexión se configura en Anthropic. Max/Team elegibles pueden reclamar
 créditos API: el enlace está en Ya tengo una suscripción de Claude.

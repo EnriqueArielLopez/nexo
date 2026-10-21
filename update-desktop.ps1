@@ -1,4 +1,4 @@
-param([string]$Source=(Join-Path $PSScriptRoot 'release-v31\Nexo'))
+param([string]$Source=(Join-Path $PSScriptRoot 'release-v32\Nexo'))
 $ErrorActionPreference='Stop'
 $programRoot=[IO.Path]::GetFullPath((Join-Path $env:LOCALAPPDATA 'Programs'))
 $destination=[IO.Path]::GetFullPath((Join-Path $programRoot 'NexoClientes'))
