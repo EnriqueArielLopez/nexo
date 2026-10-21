@@ -1,4 +1,52 @@
-# Nexo · Clientes 3.4.0
+# Nexo · Clientes 3.5.0
+
+## Estado vigente 3.5 — 21/10/2026, Local
+
+Corrección del bloqueo observado en la captura del usuario: el recorrido
+principal ya no descarga el HTML del buscador como cliente HTTP. Abre una
+ventana visible de Microsoft Edge con un perfil dedicado y lee únicamente la
+página pública del buscador. Si aparece una verificación, la búsqueda queda en
+estado `waiting` y muestra Ver buscador y Ya completé la verificación · continuar.
+El usuario completa la verificación en Edge; la confirmación en Nexo vuelve a
+leer la misma página, sin recargarla ni automatizar la resolución. Si sigue la
+verificación, vuelve a esperar. Detener cancela también esa espera.
+
+`browser-search.mjs` usa el protocolo DevTools de Edge, sin dependencias extra,
+en un puerto aleatorio que escucha en 127.0.0.1. Usa un perfil propio por usuario
+en `Datos/buscador/<id>`, no el perfil personal de Edge. Nexo crea/controla solo
+su pestaña, acepta navegación únicamente al buscador y no lee contenido de otra
+web si el usuario cambia de página. No usa técnicas de ocultación ni evade
+CAPTCHA, restricciones o avisos de seguridad. Los perfiles del buscador pueden
+guardar cookies normales de ese buscador; no forman parte del ZIP ni del backup
+JSON. No iniciar sesiones personales en esta ventana destinada a búsquedas.
+
+Al reiniciar Nexo, una investigación que estaba en espera queda pausada y debe
+iniciarse otra, conservando candidatos y exclusiones. Al cerrar Nexo se cierra
+la pestaña administrada y se desconecta el controlador. Se corrigió además el
+inicio de una nueva búsqueda después de Detener: reinicia el estado cancelado.
+
+Validado: 54 tests Node, 9 del lanzador, smoke HTTP de espera/continuación,
+guardado de candidato ficticio, detención y nueva búsqueda, sin API ni mensajes.
+Prueba real iniciada desde la UI con cuenta aislada: abrió Edge y detectó la
+verificación humana, mostrando los dos controles en Nexo. No se completó el
+CAPTCHA real ni se validó obtener contactos después de él o completar 100 reales.
+Los tests no sustituyen esa verificación pendiente del usuario.
+
+Instalación real 3.5.0 validada por health y controles HTML en puerto 18761.
+Actualizadas ambas copias de Nexo (Desktop y Programs) y el ZIP limpio del
+escritorio `Nexo-para-compartir-3.5.0.zip` (36 entradas, incluye browser-search,
+sin perfiles, SQLite ni secretos). Respaldo:
+`retirados/browser-350-20261021-140458`, `copia-0` escritorio y `copia-1` Programs.
+Rollback: cerrar Nexo y restaurar app, Nexo.exe y EMPEZA-ACA.txt de cada copia.
+No restaurar SQLite: se conservaron cuentas, filtros, conexiones y contactos.
+Servidores QA 18770/18771 cerrados. Captura de la espera humana real en
+`qa/nexo-350-verificacion-pendiente.png`, fuera de Git. Branch local
+`codex/nexo-busqueda-navegador`, sin remoto ni deploys Development/Producción.
+Los detalles de filtros, límites y revisión de candidatos de 3.4 continúan vigentes.
+Este estado y EMPEZA-ACA.txt prevalecen sobre el historial siguiente.
+
+Referencias técnicas: [protocolo de Edge](https://learn.microsoft.com/es-es/microsoft-edge/devtools/protocol/)
+y [Chrome DevTools Protocol](https://chromedevtools.github.io/devtools-protocol/).
 
 ## Estado vigente 3.4 — 21/10/2026, Local
 

@@ -1,28 +1,25 @@
-NEXO · CLIENTES 3.4.0
+NEXO · CLIENTES 3.5.0
 
-BUSCAR DESDE NEXO SIN API Y SIN CLAUDE
-1. Abrí Nexo e ingresá a tu espacio.
-2. Pegá TU Instagram y elegí los países.
-3. En Filtros elegí rubro y, opcionalmente, ciudad o zona.
-   Si tu oferta no está visible en la web pública, completá Qué ofrecés.
-4. Pulsá Buscar 100 clientes. Nexo busca en páginas públicas y guarda
-   candidatos, propuestas base y fuentes automáticamente en tu planilla.
-5. Los resultados aparecen en Todos y Por verificar. Abrí sus fichas para
-   comprobar actividad, idioma, feed y encaje antes de contactar.
+BUSCAR SIN API Y CONTINUAR SI EL BUSCADOR PIDE VERIFICACIÓN
+1. Entrá a Nexo. Pegá tu Instagram y elegí países y rubro en Filtros.
+2. Pulsá Buscar 100 clientes. Se abre una ventana visible de Microsoft Edge.
+3. Si el buscador pide una verificación humana, completala vos en esa ventana.
+4. Volvé a Nexo y pulsá Ya completé la verificación · continuar.
+   Nexo lee la misma página para continuar sin perder la validación.
+   Ver buscador trae esa pestaña al frente. Detener cancela la investigación.
 
-La búsqueda usa la web pública y reglas locales. No requiere ninguna clave
-API, suscripción de IA ni abrir Claude. Claude sigue como asistente opcional.
+No requiere claves API ni Claude. Requiere Edge instalado.
+La ventana usa un perfil propio de Nexo: no inicies sesiones personales allí.
+Si cambiás a otra web, Nexo no leerá su contenido. Para retomar, iniciá otra búsqueda.
 
-100 es el máximo buscado, no una cantidad garantizada. Se descartan cuentas
-repetidas, la tuya y resultados sin rubro/ubicación identificables. Si un sitio
-limita las consultas o pide una verificación humana, Nexo se detiene y conserva
-lo encontrado; no evade el bloqueo ni completa con contactos inventados.
+La verificación humana no se resuelve automáticamente. Si el buscador mantiene
+el bloqueo, Nexo queda en espera y no puede garantizar completar 100 resultados.
+100 es el máximo. No se completan faltantes con contactos inventados.
 
-La afinidad compara coincidencias de rubro, ubicación y señales públicas.
-El feed y la actividad actual requieren revisión: un resultado indexado no
-prueba inactividad ni intención de contratarte. No se inventan emails.
-La búsqueda no envía mensajes. Los envíos requieren revisión y confirmación.
+Los candidatos aparecen en Todos y Por verificar, con su fuente. La afinidad
+usa coincidencias de rubro, ubicación y señales públicas. Revisá actividad,
+idioma, feed y oportunidad antes de contactar. La búsqueda no envía mensajes.
+Si no se identifica tu oferta, completá Qué ofrecés en Filtros.
 
-Si ya tenías Nexo abierto al actualizar: cerralo y abrilo de nuevo.
-Datos: %LOCALAPPDATA%\NexoClientes\Datos. Respaldá desde tu espacio.
-Para compartir usá Nexo-para-compartir-3.4.0.zip completo; no compartas Datos.
+Datos: %LOCALAPPDATA%\NexoClientes\Datos. Se conservan cuentas y contactos.
+Para compartir usá Nexo-para-compartir-3.5.0.zip, no la carpeta Datos.
