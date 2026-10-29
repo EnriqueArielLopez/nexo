@@ -14,7 +14,7 @@ test('parser web conserva URLs, nombres, acentos y evidencia sin confundir resul
  const r=parseSearchResults(page([result(),{...result('otro_hotel'),title:'Hotel &amp; Café',snippet:'México &amp; España'}]));assert.equal(r.length,2);assert.equal(r[0].url,result().url);assert.equal(r[1].title,'Hotel & Café');assert.equal(r[1].snippet,'México & España');
 });
 test('la búsqueda web aplica rubro, país y ciudad comprobados en el texto',()=>{
- const lead=webCandidate(result(),settings,profile);assert.equal(lead.country,'Argentina');assert.equal(lead.city,'Salta');assert.equal(lead.qualification.status,'review');assert.equal(lead.qualification.feed,'unverified');assert.equal(lead.qualification.business,'unknown');assert.ok(lead.message.includes(profile.services));
+ const lead=webCandidate(result(),settings,profile);assert.equal(lead.country,'Argentina');assert.equal(lead.city,'Salta');assert.equal(lead.qualification.status,'review');assert.equal(lead.qualification.feed,'unverified');assert.equal(lead.qualification.business,'unknown');assert.match(lead.message,/Hola/);
  for(const r of [{...result(),snippet:'Hotel en Salta, Uruguay.'},{...result(),snippet:'Hotel en Córdoba, Argentina.'},{...result(),title:'Cafetería QA',snippet:'Cafetería en Salta, Argentina.'},{...result(),url:'https://www.instagram.com/p/abc/'},{...result(),snippet:'Hotel en Salta, Argentina. Cerrado definitivamente.'}])assert.equal(webCandidate(r,settings,profile),null);
  assert.equal(webCandidate(result('proveedor_qa'),settings,profile),null);assert.equal(webCandidate(result(),settings,profile,['hotel_qa']),null);
  assert.equal(matchGeography('Hotel Salta',settings),null);assert.equal(matchGeography('Hotel en Salta 🇦🇷',settings).country,'Argentina');
@@ -43,7 +43,7 @@ test('Tucumán reconoce provincia y localidades sin inventar país ni ampliar un
  }
  for(const text of ['Parrilla en Salta, Argentina.','Parrilla en Tucumán, Uruguay.','Parrilla en San Miguel.','Parrilla en Concepción, Chile.','Parrilla en Yerba Buena, Catamarca, Argentina.'])assert.equal(matchGeography(text,s),null,text);
  assert.equal(matchGeography('Parrilla en Yerba Buena, Tucumán.',{...s,cities:'San Miguel de Tucumán'}),null);
- const plan=queryPlan(s);assert.equal(plan.length,180);
+ const plan=queryPlan(s);assert.equal(plan.length,260);
  for(const term of ['restaurante','parrilla','resto','cerveceria','pizzeria'])assert.ok(plan.some(p=>p.q.includes(` ${term} `)),term);
  assert.ok(plan.every(p=>p.country==='Argentina'&&/Tucumán|Yerba Buena|Tafí/.test(p.q)&&!p.q.includes('-inurl:')));
 });

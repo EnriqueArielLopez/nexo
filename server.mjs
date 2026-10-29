@@ -6,6 +6,7 @@ import {prepareBatch,approveBatch} from './batches.mjs';
 import {SearchBrowser,BrowserWebDiscovery,waitForHuman} from './browser-search.mjs';
 import {claudeSearchRequest} from './campaign.mjs';
 import http from 'node:http';
+import {spawn} from 'node:child_process';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
@@ -91,6 +92,9 @@ try{if(req.headers.host!==`127.0.0.1:${port}`||req.headers.origin&&req.headers.o
   case '/api/email/send':{if(v.confirm!==true)throw Error('Confirmá los emails antes de enviarlos.');const batch=v.reviewed===true?prepareBatch(c.store,v.ids,'email'):null;if(!batch&&(!Array.isArray(v.ids)||!v.ids.length||v.ids.length>50))throw Error('Elegí entre 1 y 50 clientes.');if(batch){if(v.token!==batch.token)throw Error('La tanda cambió. Abrí la vista previa nuevamente.');approveBatch(c.store,batch);}const sendIds=batch?batch.items.map(l=>l.id):v.ids;const sent=[],failed=[];for(const [i,id]of sendIds.entries()){try{c.store.update(Number(id),{approved:true});sent.push((await emailLead(c.store,c.dir,smtp(c),Number(id))).hotel);}catch(e){failed.push((c.store.get(Number(id))?.name||'Cliente')+': '+e.message);if(/Cupo|contraseña|Configurá|conectar/.test(e.message))break;}if(i<sendIds.length-1)await new Promise(r=>setTimeout(r,4000));}await excel(c);return json(res,{sent,failed,state:state(c)});}
   case '/api/schedule':{if(v.confirm!==true)throw Error('Confirmá la programación.');if(!Array.isArray(v.ids)||!v.ids.length||v.ids.length>200)throw Error('Elegí entre 1 y 200 clientes.');if(!['email','instagram'].includes(v.channel))throw Error('Elegí email o Instagram.');const r=c.store.schedule(v.ids,v.channel,v.at);return json(res,{...r,state:state(c)});}
   case '/api/schedule/cancel':c.store.cancelSchedule(v.id);break;
+  case '/api/open-chat':{// Open the Instagram chat in Chrome (where the user is signed in to Instagram); only ig.me chat links.
+   const url='https://ig.me/m/'+handle(v.handle);const local=process.env.LOCALAPPDATA||'';let chrome='';for(const p of ['C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe','C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',path.join(local,'Google','Chrome','Application','chrome.exe')]){try{await fs.access(p);chrome=p;break;}catch{}}
+   const child=chrome?spawn(chrome,[url],{detached:true,stdio:'ignore',windowsHide:false}):spawn('explorer.exe',[url],{detached:true,stdio:'ignore'});child.on('error',()=>{});child.unref();return json(res,{ok:true,browser:chrome?'chrome':'default'});}
   case '/api/disconnect':void c.officialInstagram.cancel();c.instagramTestPreview=null;c.assistant.cancel();c.queue.pause();c.key='';c.ig=null;c.secret={};accounts.save(user.id,'');break;
   case '/api/sync':if(!c.ig)throw Error('Conectá Instagram primero.');return json(res,{...await c.ig.sync(c.store),state:state(c)});
   case '/api/search':{if(['running','waiting'].includes(c.search.status))throw Error('Ya hay una búsqueda en curso.');if(!/^(https?:\/\/)?(www\.)?instagram\.com\//i.test(v.seed||''))throw Error('Pegá el enlace completo del perfil de Instagram.');const seed=`https://www.instagram.com/${handle(v.seed)}/`;c.store.saveSettings({lastSeed:seed,maxResults:100});if(v.mode==='api'){if(!c.key)throw Error('La opción API requiere una conexión. Usá la búsqueda web para buscar sin clave.');void runSearch(c,seed);}else{void runWebSearch(c,seed);}break;}

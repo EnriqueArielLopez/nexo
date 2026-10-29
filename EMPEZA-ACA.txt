@@ -1,3 +1,23 @@
+NEXO · CLIENTES
+
+CÓMO EMPEZAR (2 MINUTOS)
+1. Extraé TODO el ZIP en una carpeta (clic derecho > Extraer todo).
+   No abras Nexo.exe desde adentro del ZIP.
+2. Abrí Nexo.exe. Si Windows muestra "Windows protegió su PC", tocá
+   "Más información" > "Ejecutar de todos modos" (el programa no está firmado).
+3. Creá tu cuenta local (usuario y contraseña de 10 caracteres o más).
+4. Tocá "▶ Cómo se usa" arriba a la derecha: es una guía animada de 8 pasos.
+5. "✈ Probar envío" te deja mandarte un mensaje de prueba por Instagram.
+
+REQUISITOS: Windows 10 u 11 de 64 bits, Microsoft Edge (viene con Windows)
+y conexión a Internet. Instagram se usa desde tu propio navegador.
+Claude es opcional: Conectar-con-Claude.cmd lo vincula si tenés la app.
+
+TANDAS DE INSTAGRAM: en el paso 2 elegí "Tanda de hoy" (5 a 30, por defecto 25)
+y tocá "Marcar los próximos". El máximo es 30 por día para cuidar tu cuenta.
+Con Claude conectado podés pedirle "prepará y enviá la tanda de hoy de Nexo":
+abre cada chat en tu Chrome, envía con pausas y marca solo a los que recibieron el mensaje.
+
 NEXO · CLIENTES 3.7.2
 
 BUSCAR SIN API Y CONTINUAR SI EL BUSCADOR PIDE VERIFICACIÓN
@@ -41,7 +61,7 @@ CATEGORÍA, LIMPIEZA Y CONTACTO
   Solo se envía a direcciones disponibles, con confirmación de la tanda.
 - Excel contiene todos los resultados activos, no solo la tanda. Nexo actualiza
   Clientes.xlsx después de registrar un envío. Descargalo nuevamente para
-  actualizar una copia descargada antes. Los enviados no vuelven como nuevos.
+  actualizar una copia descargada antes. Los enviados no vuelven como nuevos: nunca se les escribe dos veces.
 
 INSTAGRAM OFICIAL: PREPARADO, PENDIENTE DE ACTIVAR
 En Ajustes > Conectar Instagram podés indicar mila.content como remitente.

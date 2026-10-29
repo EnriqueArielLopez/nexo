@@ -61,7 +61,7 @@ const SECTOR_TERMS={
 const countryAliases={AR:['argentina','🇦🇷','arg.'],BO:['bolivia','🇧🇴'],CL:['chile','🇨🇱'],CO:['colombia','🇨🇴'],CR:['costa rica','🇨🇷'],CU:['cuba','🇨🇺'],EC:['ecuador','🇪🇨'],SV:['el salvador','🇸🇻'],ES:['españa','spain','🇪🇸'],GT:['guatemala','🇬🇹'],GQ:['guinea ecuatorial','🇬🇶'],HN:['honduras','🇭🇳'],MX:['méxico','mexico','🇲🇽'],NI:['nicaragua','🇳🇮'],PA:['panamá','panama','🇵🇦'],PY:['paraguay','🇵🇾'],PE:['perú','peru','🇵🇪'],PR:['puerto rico','🇵🇷'],DO:['república dominicana','🇩🇴'],UY:['uruguay','🇺🇾'],VE:['venezuela','🇻🇪']};
 const escaped=v=>v.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
 const contains=(text,term)=>new RegExp('(?:^|[^a-z0-9])'+escaped(normalize(term))+'(?:$|[^a-z0-9])').test(normalize(text));
-const terms=s=>SECTOR_TERMS[s]||[s];
+const terms=s=>{const lists=String(s).split(/\s*,\s*/).filter(Boolean).map(x=>SECTOR_TERMS[x]||[x]),out=[];for(let i=0;i<Math.max(0,...lists.map(l=>l.length));i++)for(const l of lists)if(l[i])out.push(l[i]);return [...new Set(out)];};
 // A province request includes its localities; a specific city stays specific.
 const regionalZones={AR:{tucuman:['Tucumán','San Miguel de Tucumán','Yerba Buena','Tafí Viejo','Tafí del Valle']}};
 const zonesFor=(city,code)=>regionalZones[code]?.[normalize(city)]||[city];
@@ -92,21 +92,28 @@ export function inferServices(text){
  const matches=[[/community manager|social media|gestion de redes/,'gestión de redes sociales'],[/content creator|creador[ae]? de contenido|contenido|\bugc\b/,'creación de contenido'],[/fotograf/,'fotografía'],[/video|reels|audiovisual/,'producción de videos'],[/marketing|publicidad/,'marketing y publicidad'],[/diseno|branding/,'diseño y marca'],[/software|programacion|desarrollo web/,'desarrollo de software']];
  return matches.filter(([pattern])=>pattern.test(text)).map(([,label])=>label).join(', ');
 }
+// Indexed Instagram snippets often omit the location; the query already targeted it.
+// Countries outside the Spanish-speaking list that still show up in results ("Hotel en Miami, Estados Unidos").
+const FOREIGN=/(?:^|[^a-z])(estados unidos|united states|ee ?uu|brasil|brazil|portugal|italia|italy|francia|france|alemania|germany|reino unido|united kingdom|inglaterra|canada)(?:$|[^a-z])/;
+function queryGeography(result,settings){const q=result.query;if(!q?.country)return null;const text=normalize([result.title,result.snippet].join(' '));const other=COUNTRIES.filter(c=>!settings.countries.includes(c.code)).some(c=>(countryAliases[c.code]||[c.name]).some(t=>t.codePointAt(0)<=0xffff&&new RegExp('(?:^|[^a-z])'+escaped(normalize(t))+'(?:$|[^a-z])').test(text)));if(other||FOREIGN.test(text))return null;const cities=String(settings.cities||'').split(/[,;\n]+/).map(x=>x.trim()).filter(Boolean);if(cities.length&&!q.city)return null;return {country:q.country,city:q.city||'',fromQuery:true};}
+// Signals that an Instagram account is gone or inactive in the public index.
+export function inactiveAccount(result){const t=normalize([result.title,result.snippet].join(' '));if(/page not found|pagina no encontrada|no esta disponible|isn.t available|cuenta (eliminada|desactivada)|cerrado definitivamente|permanently closed|cerramos (nuestras puertas|definitivamente)|ya no (estamos|atendemos)/.test(t))return 'cerrada o inexistente';const m=t.match(/([\d.,]+)\s*(k|mil|m)?\s*(posts|publicaciones)\b/);if(m&&Number(m[1].replace(/[.,]/g,''))===0)return 'sin publicaciones';return '';}
 export function webCandidate(result,settings,profile,known=[]){
  const h=instagramHandle(result.url);if(!h||!isNewProspect(h,settings.lastSeed,known))return null;
  const text=[result.title,result.snippet].join(' ');const biography=result.snippet.replace(/^.*?on\s+Instagram\s*:\s*/i,'');
  if(isDirectory(text))return null;
- const geo=matchGeography(biography,settings);if(!geo||!terms(settings.segment).some(t=>contains(text,t)))return null;
- if(/(?:cerrado definitivamente|permanently closed|agencia de viajes|guia de hoteles|directorio de hoteles|asesoramos y gestionamos sus reservas)/i.test(text)&&settings.segment!=='Turismo')return null;
+ if(inactiveAccount(result))return null;const geo=matchGeography(biography,settings)||queryGeography(result,settings);if(!geo||!terms(settings.segment).some(t=>contains(text,t)))return null;
+ if(/(?:cerrado definitivamente|permanently closed|agencia de viajes|guia de hoteles|directorio de hoteles|asesoramos y gestionamos sus reservas)/i.test(text)&&!String(settings.segment).split(/\s*,\s*/).includes('Turismo'))return null;
  const name=result.title.replace(/\s*[-–|]\s*Instagram.*$/i,'').replace(/\s*\(@[^)]+\)/,'').trim().slice(0,200)||h;
  const description=result.snippet.slice(0,1000);const source=result.evidenceUrl||result.url;
  const commercial=/reserv[aá]|booking|compr[aá]|pedidos|turnos|citas|tienda|ventas|whatsapp|contact[aá]|men[uú]|cat[aá]logo/i.test(description);
  const fit=`Rubro ${settings.segment} y ubicación coinciden con los filtros. Oferta del proveedor: ${profile.services}. Encaje específico pendiente de revisión.`;
  const category=premiumSignals(text,source);if(settings.businessTier==='premium'&&!category.length)return null;
  const indexedMatch=description.match(/([\d.,]+)\s+(?:posts|publicaciones)\b/i),indexedPosts=indexedMatch?Number(indexedMatch[1].replace(/[.,]/g,'')):null;const sparseHint=indexedPosts!==null&&indexedPosts<=12;
- const score=Math.min(90,45+(sparseHint?10:0)+(geo.city?10:0)+(commercial?10:0)+Math.min(25,category.length*10));
+ const followers=(()=>{const m=normalize(description).match(/([\d.,]+)\s*(k|mil|m)?\s*(followers|seguidores)/);if(!m)return null;const n=Number(m[1].replace(/[.,]/g,''));return m[2]==='m'?n*1e6:m[2]?n*1000:n;})();const active=indexedPosts!==null&&indexedPosts>0&&(followers===null||followers>=50);
+ const score=Math.min(90,40+(sparseHint?10:0)+(geo.city?10:0)+(commercial?10:0)+(active?5:0)-(geo.fromQuery?5:0)+Math.min(25,category.length*10));
  const qualification={version:2,method:'public-web',status:'review',hotel:true,hotelSource:source,business:'unknown',businessSignal:'none',businessSource:source,businessDetail:'Resultado público indexado: '+description,feed:'unverified',feedSource:'',feedDetail:'El feed y la actividad actual no fueron comprobados. Un resultado indexado no confirma operación actual ni falta de contenido.',postsCount:null,lastPost:'',stories:'unverified',fit,score,label:'Coincide con filtros · revisar oportunidad',checkedAt:new Date().toISOString(),manual:false};
- qualification.indexedPosts=indexedPosts;qualification.contentHint=sparseHint?'Pocas publicaciones en el índice; revisar estado actual':'';if(indexedPosts!==null)qualification.feedDetail+=' El índice informa '+indexedPosts+' publicaciones; el conteo actual no está verificado.';qualification.categorySignals=category;qualification.capacityToPay='unverified';if(category.length)qualification.label=sparseHint?'Alta categoría · pocas publicaciones indexadas · revisar':'Señales de alta categoría · revisar encaje';qualification.fit+=category.length?' Señales públicas: '+category.map(s=>s.label).join(', ')+'. Capacidad de pago sin verificar.':'';
+ qualification.indexedPosts=indexedPosts;qualification.followers=followers;qualification.activeSignal=active;if(geo.fromQuery)qualification.feedDetail+=' Ubicación tomada de la búsqueda; confirmala en el perfil.';qualification.contentHint=sparseHint?'Pocas publicaciones en el índice; revisar estado actual':'';if(indexedPosts!==null)qualification.feedDetail+=' El índice informa '+indexedPosts+' publicaciones; el conteo actual no está verificado.';qualification.categorySignals=category;qualification.capacityToPay='unverified';if(category.length)qualification.label=sparseHint?'Alta categoría · pocas publicaciones indexadas · revisar':'Señales de alta categoría · revisar encaje';qualification.fit+=category.length?' Señales públicas: '+category.map(s=>s.label).join(', ')+'. Capacidad de pago sin verificar.':'';
  const message=personalize(settings.template||defaults.template,{name,handle:h,city:geo.city},{...settings,sender:settings.sender||'@'+handle(settings.lastSeed),offer:profile.services});
  const email=(description.match(/[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/i)||[])[0]||'';
  return {email,handle:h,name,...geo,language:'es',source,message,reason:[qualification.businessDetail,qualification.fit,qualification.feedDetail].join(' · '),score,score_reason:'Afinidad por rubro, ubicación y categoría publicada; capacidad de pago e intención de compra sin verificar.',qualification};
@@ -114,7 +121,7 @@ export function webCandidate(result,settings,profile,known=[]){
 export function rejectionReason(result,settings,known=[]){
  const h=instagramHandle(result.url);if(!h)return 'invalidProfile';if(!isNewProspect(h,settings.lastSeed,known))return 'duplicates';
  const text=result.title+' '+result.snippet;if(isDirectory(text))return 'directory';
- if(!matchGeography(result.snippet.replace(/^.*?on\s+Instagram\s*:\s*/i,''),settings))return 'location';
+ if(inactiveAccount(result))return 'inactive';if(!matchGeography(result.snippet.replace(/^.*?on\s+Instagram\s*:\s*/i,''),settings)&&!queryGeography(result,settings))return 'location';
  if(!terms(settings.segment).some(t=>contains(text,t)))return 'sector';
  if(settings.businessTier==='premium'&&!premiumSignals(text,result.url).length)return 'category';return 'other';
 }
@@ -127,7 +134,7 @@ export function queryPlan(settings){
   const pairs=Array.from({length:maxZones},(_,zone)=>terms(settings.segment).map((term,index)=>({zone,term,index}))).flat();if(!cities.length)pairs.sort((a,b)=>a.index-b.index||a.zone-b.zone);
   for(const {zone,term} of pairs)for(const country of countries){const zones=countryZones(country);if(zone>=zones.length)continue;const city=zones[zone];const region=cities.find(c=>regionalZones[country.code]?.[normalize(c)]?.includes(city));const q=`site:instagram.com ${term} ${variant} ${city||country.name}${region&&normalize(city)!==normalize(region)?' '+region:''}${variant&&cities.length?' '+country.name:''}`.replace(/\s+/g,' ').trim();plan.push({q,country:country.name,city});}
  }
- const mixed=[];for(const p of plan){mixed.push(p);if(settings.businessTier==='premium'&&settings.segment.includes('Hotel'))mixed.push({...p,q:p.q.replace('site:instagram.com ','')+' Instagram'});}return mixed.slice(0,180);
+ const mixed=[];for(const p of plan){mixed.push(p);if(settings.businessTier==='premium'&&settings.segment.includes('Hotel'))mixed.push({...p,q:p.q.replace('site:instagram.com ','')+' Instagram'});}return mixed.slice(0,420);
 }
 export class PublicWebDiscovery {
  constructor({read=fetchPublic,delayMs=5000,signal}={}){this.read=read;this.delayMs=delayMs;this.signal=signal;this.calls=0;this.lastSearch=0;this.websiteCache=new Map();}
@@ -139,7 +146,7 @@ export class PublicWebDiscovery {
   return parseSearchResults(page.html);
  }
  canEnrich(result){try{return !/(^|\.)(instagram\.com|facebook\.com|youtube\.com|booking\.com|tripadvisor\.[a-z.]+)$/.test(new URL(result.url).hostname);}catch{return false;}}
- async enrich(result){if(instagramHandle(result.url))return [result];if(!this.canEnrich(result))return [];if(this.websiteCache.has(result.url))return this.websiteCache.get(result.url);let profiles=[];try{this.calls++;profiles=websiteProfiles(await this.read(result.url,{signal:this.signal,timeoutMs:6000}),result);}catch{}this.websiteCache.set(result.url,profiles);return profiles;}
+ async enrich(result){if(instagramHandle(result.url))return [result];if(!this.canEnrich(result))return [];if(this.websiteCache.has(result.url))return this.websiteCache.get(result.url);let profiles=[];try{this.calls++;profiles=websiteProfiles(await this.read(result.url,{signal:this.signal,timeoutMs:4000}),result);}catch{}this.websiteCache.set(result.url,profiles);return profiles;}
  async profile(seed,settings){
   if(settings.offer?.trim())return {services:settings.offer.trim().slice(0,1000),summary:'Oferta indicada por vos.',source:'',fromContext:true,method:'public-web'};
   const h=handle(seed),results=await this.search('"'+h+'" Instagram');const result=results.find(r=>instagramHandle(r.url)===h);const services=result&&inferServices(result.title+' '+result.snippet);
@@ -147,29 +154,31 @@ export class PublicWebDiscovery {
   return {services,summary:result.snippet,source:result.url,fromContext:false,method:'public-web'};
  }
 }
+const transient=e=>e?.code!=='WEB_BLOCKED'&&/no termin. de cargar|no respondi. a tiempo|No se pudo abrir el buscador|no pudo completar la operaci|HTTP 5\d\d|timeout|aborted due to timeout|fetch failed|ECONNRESET|ETIMEDOUT/i.test(e?.message||'');
+async function resilient(fn){try{return await fn();}catch(e){if(!transient(e))throw e;await new Promise(r=>setTimeout(r,4000));return fn();}}
 export async function discoverWeb({store,seed,web=new PublicWebDiscovery(),progress=()=>{},save=async()=>{},cancelled=()=>false}){
  const settings={...store.settings(),lastSeed:seed};const known=new Set(store.list().map(l=>l.handle));const state={status:'running',method:'public-web',found:0,qualified:0,review:0,target:Math.min(100,settings.maxResults||100),businessTier:settings.businessTier||'all',stage:'Identificando tu oferta en la web pública',summary:'',queries:0,pages:0,scanned:0,rejected:{},ids:[],usage:null,startedAt:new Date().toISOString()};
  const emit=()=>progress({...state});emit();
  try{
   const profile=await web.profile(seed,settings);state.profile=profile;emit();
-  const plan=queryPlan(settings);state.totalQueries=plan.length;
+  const plan=queryPlan(settings);state.totalQueries=plan.length;let consecutive=0;
   for(const [index,query]of plan.entries()){
    if(cancelled()||state.found>=state.target)break;
    state.stage=`Buscando ${settings.segment} en ${query.city?[query.city,query.country].join(', '):query.country} · consulta ${index+1}/${plan.length}`;state.queries=index+1;emit();
-   let results=await web.search(query.q);const seenPages=new Set();
-   for(let page=0;page<3&&state.pages<540&&!cancelled()&&state.found<state.target;page++){
+   let results;try{results=await resilient(()=>web.search(query.q));consecutive=0;}catch(e){if(!transient(e))throw e;consecutive++;state.skipped=(state.skipped||0)+1;if(consecutive>=5)throw Error('La conexión con el buscador falló varias veces seguidas. Se conservaron los candidatos encontrados; volvé a intentar en un rato.');continue;}const seenPages=new Set();
+   for(let page=0;page<3&&state.pages<1300&&!cancelled()&&state.found<state.target;page++){
     if(!results.length)break;const fingerprint=results.map(r=>r.url).join('|');if(seenPages.has(fingerprint))break;seenPages.add(fingerprint);state.pages++;
-    const leads=[],expanded=results.filter(r=>instagramHandle(r.url));const sites=web.enrich?results.filter(r=>!instagramHandle(r.url)&&(!web.canEnrich||web.canEnrich(r))).filter((r,i,a)=>a.findIndex(v=>v.url===r.url)===i).slice(0,3):[];
-    if(sites.length){state.stage='Revisando '+sites.length+' fuentes públicas del rubro';emit();const checked=await Promise.allSettled(sites.map(r=>web.enrich(r)));for(const result of checked)if(result.status==='fulfilled')expanded.push(...result.value);}
+    for(const r of results)r.query=query;const leads=[],expanded=results.filter(r=>instagramHandle(r.url));const sites=web.enrich?results.filter(r=>!instagramHandle(r.url)&&(!web.canEnrich||web.canEnrich(r))).filter((r,i,a)=>a.findIndex(v=>v.url===r.url)===i).slice(0,2):[];
+    if(sites.length){state.stage='Revisando '+sites.length+' fuentes públicas del rubro';emit();const checked=await Promise.allSettled(sites.map(r=>web.enrich(r)));for(const result of checked)if(result.status==='fulfilled')expanded.push(...result.value.map(v=>({...v,query})));}
     for(const result of expanded){state.scanned++;const lead=webCandidate(result,settings,profile,[...known]);if(lead){known.add(lead.handle);leads.push(lead);}else{const why=rejectionReason(result,settings,[...known]);state.rejected[why]=(state.rejected[why]||0)+1;}if(leads.length>=state.target-state.found)break;}
     const count=ingest(store,leads);state.found+=count.added;state.review+=count.added;for(const lead of leads){const id=store.db.prepare('SELECT id FROM leads WHERE handle=?').get(lead.handle)?.id;if(id)state.ids.push(Number(id));}emit();if(count.added)await save().catch(()=>{});
-    if(page===2||state.found>=state.target||cancelled()||!web.nextPage)break;results=await web.nextPage();
+    if(page===2||state.found>=state.target||cancelled()||!web.nextPage||!leads.length)break;try{results=await web.nextPage();}catch(e){if(!transient(e))throw e;break;}
    }
-   if(state.pages>=540)break;
+   if(state.pages>=1300)break;
   }
   state.status=cancelled()?'paused':'completed';state.stage=cancelled()?'Búsqueda detenida':`${state.found} candidatos encontrados en la web`;
  }catch(e){state.status=cancelled()?'paused':'failed';state.error=cancelled()?'':e.message;state.stage=cancelled()?'Búsqueda detenida':'La búsqueda se detuvo; se conservaron los candidatos encontrados.';}
  state.outcome=state.found>=state.target?'target-reached':'partial';
- state.summary=`${state.found}/${state.target} candidatos · ${state.queries} consultas · ${state.pages} páginas · ${state.scanned} resultados examinados. ${state.rejected.duplicates||0} repetidos; ${state.rejected.location||0} sin ubicación coincidente; ${state.rejected.sector||0} sin rubro coincidente; ${state.rejected.category||0} sin señales de alta categoría; ${state.rejected.directory||0} directorios descartados. Actividad, encaje y capacidad de pago requieren revisión. ${state.found<state.target?'Objetivo incompleto: no se inventaron contactos.':''}`;
+ state.summary=`${state.found}/${state.target} candidatos · ${state.queries} consultas · ${state.pages} páginas · ${state.scanned} resultados examinados. ${state.rejected.duplicates||0} repetidos; ${state.rejected.location||0} sin ubicación coincidente; ${state.rejected.sector||0} sin rubro coincidente; ${state.rejected.category||0} sin señales de alta categoría; ${state.rejected.directory||0} directorios descartados; ${state.rejected.inactive||0} cuentas cerradas o sin publicaciones; ${state.skipped||0} consultas salteadas por errores de carga. Actividad, encaje y capacidad de pago requieren revisión. ${state.found<state.target?'Objetivo incompleto: no se inventaron contactos.':''}`;
  state.usage={webRequests:web.calls,paidApiCalls:0};emit();store.setJob('lastSearch',{...state,seed,at:new Date().toISOString()});return state;
 }

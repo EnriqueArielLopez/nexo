@@ -45,7 +45,7 @@ export class SearchBrowser {
  async navigate(url){if(!isSearchUrl(url))throw Error('Solo se permite abrir el buscador público.');await this.ensure();this.expectedQuery=new URL(url).searchParams.get('q');const result=await this.client.call('Page.navigate',{url},this.sessionId);if(result.errorText)throw Error('No se pudo abrir el buscador. Revisá la conexión.');}
  async current({signal,previousHtml}={}){
   await this.ensure();let last=null;
-  for(let i=0;i<50;i++){
+  for(let i=0;i<125;i++){
    if(signal?.aborted)throw Error('Búsqueda detenida.');
    const result=await this.client.call('Runtime.evaluate',{expression:SNAPSHOT,returnByValue:true},this.sessionId);last=result.result?.value;
    if(last?.otherPage&&last.url!=='about:blank')throw Error('La ventana del buscador está en otra página. Volvé a iniciar la búsqueda; Nexo no leerá esa página.');
@@ -65,7 +65,8 @@ export class SearchBrowser {
  async close(){if(this.client&&this.targetId)await this.client.call('Target.closeTarget',{targetId:this.targetId}).catch(()=>{});this.client?.close();this.client=null;}
 }
 export class BrowserWebDiscovery extends PublicWebDiscovery {
- constructor({browser,onChallenge,delayMs=5000,signal}={}){super({delayMs,signal});this.browser=browser;this.onChallenge=onChallenge;}
+ constructor({browser,onChallenge,delayMs=3500,signal}={}){super({delayMs,signal});this.browser=browser;this.onChallenge=onChallenge;}
+ slowDown(){this.delayMs=Math.max(this.delayMs,7000);}
  async search(q){
   if(this.signal?.aborted)throw Error('Búsqueda detenida.');
   const wait=Math.max(0,this.lastSearch+this.delayMs-Date.now());if(wait)await new Promise(r=>setTimeout(r,wait));
@@ -74,7 +75,7 @@ export class BrowserWebDiscovery extends PublicWebDiscovery {
   let page=await this.browser.read('https://html.duckduckgo.com/html/?q='+encodeURIComponent(q),{signal:this.signal});
   while(needsHuman(page.html)){
    if(!this.onChallenge)throw Error('Completá la verificación en la ventana del buscador.');
-   await this.browser.show();await this.onChallenge({query:q,url:page.url});
+   this.slowDown();await this.browser.show();await this.onChallenge({query:q,url:page.url});
    if(this.signal?.aborted)throw Error('Búsqueda detenida.');
    // Only after a user's explicit Continue; do not navigate/reload or solve the challenge.
    page=await this.browser.current({signal:this.signal});
@@ -87,7 +88,7 @@ export class BrowserWebDiscovery extends PublicWebDiscovery {
   if(this.signal?.aborted)throw Error('Búsqueda detenida.');
   const page=await this.browser.next({signal:this.signal});if(!page)return [];
   this.calls++;this.lastSearch=Date.now();let current=page;
-  while(needsHuman(current.html)){if(!this.onChallenge)throw Error('Completá la verificación en la ventana del buscador.');await this.browser.show();await this.onChallenge({query:this.query,url:current.url});if(this.signal?.aborted)throw Error('Búsqueda detenida.');current=await this.browser.current({signal:this.signal});}
+  while(needsHuman(current.html)){if(!this.onChallenge)throw Error('Completá la verificación en la ventana del buscador.');this.slowDown();await this.browser.show();await this.onChallenge({query:this.query,url:current.url});if(this.signal?.aborted)throw Error('Búsqueda detenida.');current=await this.browser.current({signal:this.signal});}
   return parseSearchResults(current.html);
  }
 }
