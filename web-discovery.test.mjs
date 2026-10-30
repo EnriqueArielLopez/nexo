@@ -4,7 +4,7 @@ import {mkdtempSync,rmSync} from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import {Store} from './core.mjs';
-import {parseSearchResults,webCandidate,queryPlan,matchGeography,inferServices,isPublicAddress,PublicWebDiscovery,discoverWeb,instagramHandle,rejectionReason} from './web-discovery.mjs';
+import {parseSearchResults,webCandidate,queryPlan,matchGeography,inferServices,isPublicAddress,PublicWebDiscovery,discoverWeb,instagramHandle,rejectionReason,postDates} from './web-discovery.mjs';
 const settings={lastSeed:'https://www.instagram.com/proveedor_qa/',segment:'Hoteles',countries:['AR'],cities:'Salta',offer:'Creación de contenido',sender:'Marca QA',maxResults:100};
 const profile={services:'creación de contenido y fotografía'};
 const result=(h='hotel_qa')=>({url:'https://www.instagram.com/'+h+'/',title:'Hotel QA (@'+h+') - Instagram',snippet:'Hotel en Salta, Argentina. Reservas por WhatsApp. Habitaciones y spa.'});
@@ -67,7 +67,7 @@ test('direcciones privadas y metadatos no se consideran sitios públicos',()=>{
 });
 test('guarda hasta100 candidatos sin API, conserva fuentes y no duplica cuentas',async()=>{
  const f=fixture();try{let n=0,saves=0;const web=new PublicWebDiscovery({delayMs:0,read:async()=>({html:page(Array.from({length:20},()=>result('hotel_web_'+n++)))})});
- f.store.saveSettings({countries:['AR','UY','CL','PE']});const state=await discoverWeb({store:f.store,seed:settings.lastSeed,web,save:async()=>{saves++;}});assert.equal(state.status,'completed');assert.equal(state.found,100);assert.equal(state.qualified,0);assert.equal(state.review,100);assert.equal(state.usage.paidApiCalls,0);assert.equal(f.store.list().length,100);assert.equal(saves,5);assert.ok(f.store.list().every(l=>l.source.startsWith('https://www.instagram.com/')&&l.approved===0));
+ f.store.saveSettings({countries:['AR','UY','CL','PE']});const state=await discoverWeb({store:f.store,seed:settings.lastSeed,web,save:async()=>{saves++;}});assert.equal(state.status,'completed');assert.equal(state.found,100);assert.equal(state.qualified,0);assert.equal(state.review,100);assert.equal(state.usage.paidApiCalls,0);assert.equal(f.store.list().length,100);assert.equal(saves,10);assert.ok(f.store.list().every(l=>l.source.startsWith('https://www.instagram.com/')&&l.approved===0));
  }finally{f.close();}
 });
 test('duplicados, bloqueo del buscador y cancelación conservan candidatos reales',async()=>{
@@ -80,4 +80,8 @@ test('las cadenas grandes se descartan aunque coincidan rubro y ubicación',()=>
  assert.equal(webCandidate(chain,settings,profile),null);assert.equal(rejectionReason(chain,settings),'chain');
  for(const title of ['Meliá Salta (@meliasalta)','Hotel Ibis Salta (@ibissalta)','Sheraton Salta Hotel (@sheratonsalta)'])assert.equal(webCandidate({...result(),title},settings,profile),null,title);
  assert.ok(webCandidate({...result('hotel_riubamba'),title:'Hotel Riubamba (@hotel_riubamba)'},settings,profile));assert.ok(webCandidate(result(),settings,profile));
+});
+test('fechas de publicaciones indexadas en inglés, español y relativas',()=>{
+ const now=new Date('2026-10-30T12:00:00Z');const r=[{url:'https://www.instagram.com/p/a/',title:'Hotel QA on Instagram',snippet:'65 likes, 14 comments - hotel_qa on March 23, 2026: "Hola"'},{url:'https://www.instagram.com/p/b/',title:'x',snippet:'12 Me gusta - hotel_qa el 5 de octubre de 2026: "Hola"'},{url:'https://www.instagram.com/p/c/',title:'x',snippet:'hotel_qa • Follow hotel_qa 2d Cocktails'},{url:'https://www.instagram.com/p/d/',title:'x',snippet:'otra_cuenta on May 1, 2026: "No"'}];
+ assert.deepEqual(postDates(r,'hotel_qa',now),['2026-10-28','2026-10-05','2026-03-23']);
 });
