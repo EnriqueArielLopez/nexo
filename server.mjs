@@ -103,6 +103,7 @@ try{if(req.headers.host!==`127.0.0.1:${port}`||req.headers.origin&&req.headers.o
   case '/api/search/stop':c.search.cancel=true;c.webAbort?.abort();break;
   case '/api/import':{const stats=ingest(c.store,readImport(v));await excel(c);return json(res,{...stats,state:state(c)});}
   case '/api/add':{const result=c.store.add(v);if(result.added)c.store.setScore(result.id,v.score,v.score_reason);await excel(c);break;}
+  case '/api/activity':c.store.setActivity(Number(v.id),{active:v.active===true,by:'user',note:v.active===true?'Marcada por vos: publica seguido':'Marcada por vos: poco activa'});await excel(c);break;
   case '/api/update':c.store.update(Number(v.id),v);if(c.ig?.account&&'dnc'in v)budget.doNotContact(c.ig.account.id,c.store.get(Number(v.id)).handle,v.dnc===true);await excel(c);break;
   case '/api/manual':{if(v.confirm!==true)throw Error('Confirmá que ya enviaste la propuesta.');const event=c.store.reserve(Number(v.id));c.store.finish(event.event,'sent','Confirmado manualmente');await excel(c);break;}
   case '/api/send':if(!c.ig)throw Error('Conectá Instagram.');await c.ig.send(c.store,Number(v.id));await excel(c);break;

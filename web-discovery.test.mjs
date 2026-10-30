@@ -4,7 +4,7 @@ import {mkdtempSync,rmSync} from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import {Store} from './core.mjs';
-import {parseSearchResults,webCandidate,queryPlan,matchGeography,inferServices,isPublicAddress,PublicWebDiscovery,discoverWeb,instagramHandle} from './web-discovery.mjs';
+import {parseSearchResults,webCandidate,queryPlan,matchGeography,inferServices,isPublicAddress,PublicWebDiscovery,discoverWeb,instagramHandle,rejectionReason} from './web-discovery.mjs';
 const settings={lastSeed:'https://www.instagram.com/proveedor_qa/',segment:'Hoteles',countries:['AR'],cities:'Salta',offer:'Creación de contenido',sender:'Marca QA',maxResults:100};
 const profile={services:'creación de contenido y fotografía'};
 const result=(h='hotel_qa')=>({url:'https://www.instagram.com/'+h+'/',title:'Hotel QA (@'+h+') - Instagram',snippet:'Hotel en Salta, Argentina. Reservas por WhatsApp. Habitaciones y spa.'});
@@ -74,4 +74,10 @@ test('duplicados, bloqueo del buscador y cancelación conservan candidatos reale
  for(const mode of ['duplicate','blocked','cancel']){const f=fixture();try{let n=0,cancel=false;const web=new PublicWebDiscovery({delayMs:0,read:async()=>{n++;if(n===2&&mode==='blocked')return {html:'<html>anomaly-modal captcha</html>'};return {html:page([result()])};}});
  const state=await discoverWeb({store:f.store,seed:settings.lastSeed,web,cancelled:()=>cancel,save:async()=>{if(mode==='cancel')cancel=true;}});assert.equal(state.found,1);assert.equal(f.store.list().length,1);assert.equal(state.status,mode==='blocked'?'failed':mode==='cancel'?'paused':'completed');if(mode==='blocked')assert.match(state.error,/verificación humana/);assert.equal(f.store.job('lastSearch').found,1);
  }finally{f.close();}}
+});
+test('las cadenas grandes se descartan aunque coincidan rubro y ubicación',()=>{
+ const chain={url:'https://www.instagram.com/secretspuertoloscabos/',title:'Secrets Puerto Los Cabos Golf & Spa Resort (@secretspuertoloscabos) • Instagram',snippet:'Hotel en Salta, Argentina. Reservas por WhatsApp. Habitaciones y spa.'};
+ assert.equal(webCandidate(chain,settings,profile),null);assert.equal(rejectionReason(chain,settings),'chain');
+ for(const title of ['Meliá Salta (@meliasalta)','Hotel Ibis Salta (@ibissalta)','Sheraton Salta Hotel (@sheratonsalta)'])assert.equal(webCandidate({...result(),title},settings,profile),null,title);
+ assert.ok(webCandidate({...result('hotel_riubamba'),title:'Hotel Riubamba (@hotel_riubamba)'},settings,profile));assert.ok(webCandidate(result(),settings,profile));
 });

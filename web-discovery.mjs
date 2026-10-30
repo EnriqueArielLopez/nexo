@@ -96,12 +96,15 @@ export function inferServices(text){
 // Countries outside the Spanish-speaking list that still show up in results ("Hotel en Miami, Estados Unidos").
 const FOREIGN=/(?:^|[^a-z])(estados unidos|united states|ee ?uu|brasil|brazil|portugal|italia|italy|francia|france|alemania|germany|reino unido|united kingdom|inglaterra|canada)(?:$|[^a-z])/;
 function queryGeography(result,settings){const q=result.query;if(!q?.country)return null;const text=normalize([result.title,result.snippet].join(' '));const other=COUNTRIES.filter(c=>!settings.countries.includes(c.code)).some(c=>(countryAliases[c.code]||[c.name]).some(t=>t.codePointAt(0)<=0xffff&&new RegExp('(?:^|[^a-z])'+escaped(normalize(t))+'(?:$|[^a-z])').test(text)));if(other||FOREIGN.test(text))return null;const cities=String(settings.cities||'').split(/[,;\n]+/).map(x=>x.trim()).filter(Boolean);if(cities.length&&!q.city)return null;return {country:q.country,city:q.city||'',fromQuery:true};}
+// Big hotel chains run social media from a central team, so they aren't clients for this service.
+const CHAINS=/(?:^|[^a-z])(secrets [^()@]*resort|dreams [^()@]*resort|breathless|zoetry|hyatt|marriott|sheraton|westin|ritz.carlton|st\.? regis|four seasons|hilton|doubletree|hampton by|waldorf|conrad|intercontinental|holiday inn|crowne plaza|radisson|wyndham|sofitel|novotel|ibis|mercure|pullman|fairmont|kempinski|mandarin oriental|rosewood|melia|paradisus|riu|barcelo|iberostar|bahia principe|nh hotel|nh collection|hard rock hotel|palladium|royalton|sandos|h10 hotel|catalonia hotel|fiesta americana|live aqua|grand velas|krystal|decameron|sonesta|best western|eurostars|vincci|room mate)(?:$|[^a-z])/;
+export function hotelChain(result){return CHAINS.test(normalize(result.title+' '+(instagramHandle(result.url)||'')));}
 // Signals that an Instagram account is gone or inactive in the public index.
 export function inactiveAccount(result){const t=normalize([result.title,result.snippet].join(' '));if(/page not found|pagina no encontrada|no esta disponible|isn.t available|cuenta (eliminada|desactivada)|cerrado definitivamente|permanently closed|cerramos (nuestras puertas|definitivamente)|ya no (estamos|atendemos)/.test(t))return 'cerrada o inexistente';const m=t.match(/([\d.,]+)\s*(k|mil|m)?\s*(posts|publicaciones)\b/);if(m&&Number(m[1].replace(/[.,]/g,''))===0)return 'sin publicaciones';return '';}
 export function webCandidate(result,settings,profile,known=[]){
  const h=instagramHandle(result.url);if(!h||!isNewProspect(h,settings.lastSeed,known))return null;
  const text=[result.title,result.snippet].join(' ');const biography=result.snippet.replace(/^.*?on\s+Instagram\s*:\s*/i,'');
- if(isDirectory(text))return null;
+ if(isDirectory(text)||hotelChain(result))return null;
  if(inactiveAccount(result))return null;const geo=matchGeography(biography,settings)||queryGeography(result,settings);if(!geo||!terms(settings.segment).some(t=>contains(text,t)))return null;
  if(/(?:cerrado definitivamente|permanently closed|agencia de viajes|guia de hoteles|directorio de hoteles|asesoramos y gestionamos sus reservas)/i.test(text)&&!String(settings.segment).split(/\s*,\s*/).includes('Turismo'))return null;
  const name=result.title.replace(/\s*[-–|]\s*Instagram.*$/i,'').replace(/\s*\(@[^)]+\)/,'').trim().slice(0,200)||h;
@@ -111,7 +114,7 @@ export function webCandidate(result,settings,profile,known=[]){
  const category=premiumSignals(text,source);if(settings.businessTier==='premium'&&!category.length)return null;
  const indexedMatch=description.match(/([\d.,]+)\s+(?:posts|publicaciones)\b/i),indexedPosts=indexedMatch?Number(indexedMatch[1].replace(/[.,]/g,'')):null;const sparseHint=indexedPosts!==null&&indexedPosts<=12;
  const followers=(()=>{const m=normalize(description).match(/([\d.,]+)\s*(k|mil|m)?\s*(followers|seguidores)/);if(!m)return null;const n=Number(m[1].replace(/[.,]/g,''));return m[2]==='m'?n*1e6:m[2]?n*1000:n;})();const active=indexedPosts!==null&&indexedPosts>0&&(followers===null||followers>=50);
- const score=Math.min(90,40+(sparseHint?10:0)+(geo.city?10:0)+(commercial?10:0)+(active?5:0)-(geo.fromQuery?5:0)+Math.min(25,category.length*10));
+ const score=Math.min(90,40+(sparseHint?10:0)+(geo.city?10:0)+(commercial?10:0)+(active?5:0)-(geo.fromQuery?5:0)-(followers!==null&&followers>=20000?10:0)+Math.min(25,category.length*10));
  const qualification={version:2,method:'public-web',status:'review',hotel:true,hotelSource:source,business:'unknown',businessSignal:'none',businessSource:source,businessDetail:'Resultado público indexado: '+description,feed:'unverified',feedSource:'',feedDetail:'El feed y la actividad actual no fueron comprobados. Un resultado indexado no confirma operación actual ni falta de contenido.',postsCount:null,lastPost:'',stories:'unverified',fit,score,label:'Coincide con filtros · revisar oportunidad',checkedAt:new Date().toISOString(),manual:false};
  qualification.indexedPosts=indexedPosts;qualification.followers=followers;qualification.activeSignal=active;if(geo.fromQuery)qualification.feedDetail+=' Ubicación tomada de la búsqueda; confirmala en el perfil.';qualification.contentHint=sparseHint?'Pocas publicaciones en el índice; revisar estado actual':'';if(indexedPosts!==null)qualification.feedDetail+=' El índice informa '+indexedPosts+' publicaciones; el conteo actual no está verificado.';qualification.categorySignals=category;qualification.capacityToPay='unverified';if(category.length)qualification.label=sparseHint?'Alta categoría · pocas publicaciones indexadas · revisar':'Señales de alta categoría · revisar encaje';qualification.fit+=category.length?' Señales públicas: '+category.map(s=>s.label).join(', ')+'. Capacidad de pago sin verificar.':'';
  const message=personalize(settings.template||defaults.template,{name,handle:h,city:geo.city},{...settings,sender:settings.sender||'@'+handle(settings.lastSeed),offer:profile.services});
@@ -120,7 +123,7 @@ export function webCandidate(result,settings,profile,known=[]){
 }
 export function rejectionReason(result,settings,known=[]){
  const h=instagramHandle(result.url);if(!h)return 'invalidProfile';if(!isNewProspect(h,settings.lastSeed,known))return 'duplicates';
- const text=result.title+' '+result.snippet;if(isDirectory(text))return 'directory';
+ const text=result.title+' '+result.snippet;if(isDirectory(text))return 'directory';if(hotelChain(result))return 'chain';
  if(inactiveAccount(result))return 'inactive';if(!matchGeography(result.snippet.replace(/^.*?on\s+Instagram\s*:\s*/i,''),settings)&&!queryGeography(result,settings))return 'location';
  if(!terms(settings.segment).some(t=>contains(text,t)))return 'sector';
  if(settings.businessTier==='premium'&&!premiumSignals(text,result.url).length)return 'category';return 'other';
