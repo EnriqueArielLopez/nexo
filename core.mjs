@@ -5,7 +5,7 @@ import {mkdirSync} from 'node:fs';
 import path from 'node:path';
 import {COUNTRIES,SEGMENTS} from './geography.mjs';
 
-export const defaults = {offer:'',region:'Argentina, Uruguay y España',template:DEFAULT_TEMPLATE,sender:'',daily:25,monthly:600,model:'claude-sonnet-4-6',graphVersion:'v24.0',emailDaily:20,emailMonthly:300,emailSubject:'Propuesta para {hotel}',smtpHost:'smtp.gmail.com',smtpPort:465,smtpUser:'',emailFrom:'',attachment:'',autoEmail:false,autoEmailTime:'09:00',autoEmailCount:10};
+export const defaults = {offer:'',region:'Argentina, Uruguay y España',template:DEFAULT_TEMPLATE,sender:'',daily:25,monthly:3000,model:'claude-sonnet-4-6',graphVersion:'v24.0',emailDaily:20,emailMonthly:300,emailSubject:'Propuesta para {hotel}',smtpHost:'smtp.gmail.com',smtpPort:465,smtpUser:'',emailFrom:'',attachment:'',autoEmail:false,autoEmailTime:'09:00',autoEmailCount:10};
 export function day(date=new Date()) { return new Intl.DateTimeFormat('sv-SE',{timeZone:'America/Argentina/Buenos_Aires',year:'numeric',month:'2-digit',day:'2-digit'}).format(date); }
 export function twoMonths(iso) { const d=new Date(iso); const n=d.getUTCDate(); d.setUTCDate(1); d.setUTCMonth(d.getUTCMonth()+2); const end=new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth()+1,0)).getUTCDate(); d.setUTCDate(Math.min(n,end)); return d.toISOString(); }
 export function handle(input) { let s=String(input||'').trim(); if(s.startsWith('@')) s=s.slice(1);if(/^(www\.)?instagram\.com\//i.test(s))s='https://'+s; if(/^https?:/i.test(s)){const u=new URL(s); if(!['instagram.com','www.instagram.com'].includes(u.hostname)||u.pathname.split('/').filter(Boolean).length!==1) throw Error('Ingresá el enlace de un perfil de Instagram, no una publicación.'); s=u.pathname.split('/')[1];} if(!/^[a-zA-Z0-9._]{1,30}$/.test(s)||['p','reel','reels','stories','explore','accounts','direct'].includes(s.toLowerCase()))throw Error('Perfil de Instagram inválido.'); return s.toLowerCase(); }
@@ -30,7 +30,7 @@ export class Store {
   const s={...this.settings()};
   for(const k of ['offer','region','template','sender','model','graphVersion','cities','lastSeed','emailSubject','smtpHost','smtpUser','emailFrom','attachment','instagramSender'])if(k in v)s[k]=clean(v[k],k==='template'?2000:1000);
   if('smtpPort'in v){const n=Number(v.smtpPort);if(![25,465,587,2525].includes(n))throw Error('Puerto de email inválido (usá 465 o 587).');s.smtpPort=n;}
-  if('daily'in v&&Number(v.daily)>30)throw Error('Para cuidar tu cuenta, el máximo por día en Instagram es 30 mensajes.');
+  if('daily'in v&&Number(v.daily)>100)throw Error('Para cuidar tu cuenta, el máximo por día en Instagram es 100 mensajes.');
   for(const k of ['daily','monthly','emailDaily','emailMonthly'])if(k in v){const n=Number(v[k]);if(!Number.isInteger(n)||n<1||n>10000)throw Error('Elegí un cupo entre 1 y 10000.');s[k]=n;}
   if('countries'in v){if(!Array.isArray(v.countries)||!v.countries.length||v.countries.some(c=>!COUNTRIES.some(x=>x.code===c)))throw Error('Seleccioná al menos un país de la lista.');s.countries=[...new Set(v.countries)];}
   if('businessTier'in v){if(!['premium','all'].includes(v.businessTier))throw Error('Categoría inválida.');s.businessTier=v.businessTier;}

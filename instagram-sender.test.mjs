@@ -1,0 +1,59 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {mkdtempSync,rmSync} from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import {Store} from './core.mjs';
+import {InstagramSender} from './instagram-sender.mjs';
+
+const recent=n=>Array.from({length:n},(_,i)=>new Date(Date.now()-(i*7+1)*864e5).toISOString().slice(0,10));
+// A fake Instagram behind the DevTools protocol: profiles, chats with a text box, and what Enter does.
+function fakeInstagram(profiles,{history={}}={}){
+ let url='about:blank',box='';const chats={...history},calls=[];
+ const handleOf=()=>url.split('/').filter(Boolean).pop();
+ const client={close(){},async call(method,params={}){calls.push([method,params]);switch(method){
+  case 'Target.getTargets':return {targetInfos:[{type:'page',targetId:'t1',url}]};
+  case 'Target.attachToTarget':return {sessionId:'s1'};
+  case 'Browser.getWindowForTarget':return {windowId:1};
+  case 'Network.getCookies':return {cookies:[{name:'ds_user_id',value:'1'}]};
+  case 'Page.navigate':url=params.url;box='';return {};
+  case 'Input.insertText':box+=params.text;return {};
+  case 'Input.dispatchKeyEvent':if(params.type==='keyDown'&&params.key==='Enter'){if(params.modifiers===8)box+='\n';else{chats[handleOf()]=(chats[handleOf()]||'')+' '+box;box='';}}return {};
+  case 'Runtime.evaluate':{const e=params.expression;
+   if(e==='document.readyState')return {result:{value:'complete'}};
+   if(e.startsWith('(async()=>{const wait')){const p=profiles[handleOf()];return {result:{value:p?{title:p.title,text:p.text||'',dates:p.dates||[],posts:(p.dates||[]).length}:{title:'Instagram',text:'Esta página no está disponible.',dates:[],posts:0}}};}
+   if(e.includes('getBoundingClientRect'))return {result:{value:url.startsWith('https://ig.me/m/')?{x:10,y:10,text:box}:null}};
+   if(e.includes('innerText'))return {result:{value:url.startsWith('https://ig.me/m/')?'Chat '+(chats[handleOf()]||'')+' '+box:''}};
+   return {result:{value:null}};}
+  default:return {};}}};
+ return {client,chats,calls};
+}
+function fixture(){const dir=mkdtempSync(path.join(os.tmpdir(),'nexo-sender-'));const store=new Store(dir);store.saveSettings({daily:100});return {store,close(){store.close();rmSync(dir,{recursive:true,force:true});}};}
+const lead=(store,handle,activity)=>{const id=store.add({handle,name:handle,source:'https://www.instagram.com/'+handle+'/',language:'es',country:'México'}).id;store.update(id,{message:'¡Hola!\nSoy Mica.',approved:true,qualificationReviewed:true});if(activity)store.setActivity(id,{dates:activity,source:'profile'});return {...store.get(id),message:'¡Hola!\nSoy Mica.'};};
+
+test('envío automático: revisa el perfil, pega con saltos de línea, envía, confirma, registra y saltea a los que no van',async()=>{
+ const f=fixture();try{
+  const ig=fakeInstagram({hotel_sol:{title:'Hotel Sol (@hotel_sol)',dates:recent(2).concat(['2025-01-01'])},barber:{title:'Barbería Top (@barber)',dates:recent(1)},activo:{title:'Posada Activa (@activo)',dates:recent(12)},yaescrito:{title:'Hostal Viejo (@yaescrito)',dates:recent(1)}},{history:{yaescrito:'¡Hola! Soy Mica.'}});
+  const items=['hotel_sol','barber','activo','fantasma','yaescrito'].map(h=>lead(f.store,h));
+  const s=new InstagramSender(f.store.dir||os.tmpdir(),{store:f.store,connect:async()=>ig.client,readFile:async()=>'9222\n/devtools/browser/abc',pause:[0,0],wait:async()=>{}});
+  s.start(items);await s.done;
+  const by=Object.fromEntries(s.state.items.map(i=>[i.handle,i]));
+  assert.equal(s.state.status,'done');
+  assert.equal(by.hotel_sol.status,'sent');assert.match(ig.chats.hotel_sol,/¡Hola!\nSoy Mica\./);
+  assert.ok(ig.calls.some(([m,p])=>m==='Input.dispatchKeyEvent'&&p.key==='Enter'&&p.modifiers===8),'salto de línea con Shift+Enter');
+  assert.equal(by.barber.status,'skipped');assert.match(by.barber.note,/No es un alojamiento/);assert.equal(f.store.get(items[1].id).dnc,1);
+  assert.equal(by.activo.status,'skipped');assert.match(by.activo.note,/Publica seguido/);assert.equal(ig.chats.activo,undefined);
+  assert.equal(by.fantasma.status,'skipped');assert.match(by.fantasma.note,/ya no existe/);
+  assert.equal(by.yaescrito.status,'sent');assert.equal(ig.chats.yaescrito,'¡Hola! Soy Mica.','no se le escribe dos veces');
+  assert.equal(f.store.gate({...f.store.get(items[0].id),approved:1,qualification:''}),'Ya contactado');
+  assert.equal(f.store.counts().daily,2);
+ }finally{f.close();}
+});
+test('envío automático: sin sesión de Instagram abre el inicio de sesión y no envía nada',async()=>{
+ const f=fixture();try{
+  const ig=fakeInstagram({});const base=ig.client.call;ig.client.call=async(m,p)=>m==='Network.getCookies'?{cookies:[]}:base(m,p);
+  const s=new InstagramSender(os.tmpdir(),{store:f.store,connect:async()=>ig.client,readFile:async()=>'9222\n/devtools/browser/abc',pause:[0,0],wait:async()=>{}});
+  s.start([lead(f.store,'hotel_sol')]);await s.done;
+  assert.equal(s.state.status,'login');assert.ok(ig.calls.some(([m,p])=>m==='Page.navigate'&&/accounts\/login/.test(p.url)));assert.equal(f.store.counts().daily,0);
+ }finally{f.close();}
+});

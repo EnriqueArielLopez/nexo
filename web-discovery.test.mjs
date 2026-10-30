@@ -4,7 +4,7 @@ import {mkdtempSync,rmSync} from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import {Store} from './core.mjs';
-import {parseSearchResults,webCandidate,queryPlan,matchGeography,inferServices,isPublicAddress,PublicWebDiscovery,discoverWeb,instagramHandle,rejectionReason,postDates,notBusiness,otherTrade,hotelChain} from './web-discovery.mjs';
+import {parseSearchResults,webCandidate,queryPlan,matchGeography,inferServices,isPublicAddress,PublicWebDiscovery,discoverWeb,instagramHandle,rejectionReason,postDates,notBusiness,otherTrade,hotelChain,lodging} from './web-discovery.mjs';
 const settings={lastSeed:'https://www.instagram.com/proveedor_qa/',segment:'Hoteles',countries:['AR'],cities:'Salta',offer:'Creación de contenido',sender:'Marca QA',maxResults:100};
 const profile={services:'creación de contenido y fotografía'};
 const result=(h='hotel_qa')=>({url:'https://www.instagram.com/'+h+'/',title:'Hotel QA (@'+h+') - Instagram',snippet:'Hotel en Salta, Argentina. Reservas por WhatsApp. Habitaciones y spa.'});
@@ -102,4 +102,13 @@ test('cada búsqueda sigue desde la consulta donde terminó la anterior',async()
  let stop=false;await discoverWeb({store:f.store,seed:settings.lastSeed,web,cancelled:()=>stop||(stop=asked.length>=3,false)});const first=f.store.job('searchCursor').next;assert.ok(first>0);
  asked.length=0;stop=false;await discoverWeb({store:f.store,seed:settings.lastSeed,web,cancelled:()=>asked.length>=1});const plan=queryPlan({...f.store.settings(),lastSeed:settings.lastSeed});assert.equal(asked[0],plan[first].q);
  }finally{f.close();}
+});
+test('solo alojamientos: el nombre o la bio con habitaciones; que la bio diga «hotel» no alcanza',()=>{
+ const r=(title,h,snippet)=>({url:'https://www.instagram.com/'+h+'/',title:title+' (@'+h+') • Instagram photos and videos',snippet});
+ assert.ok(lodging(r('Posada del Sol','posadadelsol','Salta')));
+ assert.ok(lodging(r('Casa Malca','casamalca','Tulum. 71 habitaciones frente al mar. Reservas por DM.')));
+ assert.equal(lodging(r('Jiram Romero | Barbería de Lujo Cancún','jirambmx','Servicio a domicilio y en hotel. Cancún')),false);
+ assert.equal(lodging(r('Choferes Cancún','choferescun','Traslados aeropuerto - hotel. Cancún')),false);
+ assert.equal(lodging(r('Lucía Fotos','luciafotos','Fotografía de bodas en hoteles de Salta')),false);
+ assert.equal(webCandidate(r('Choferes Salta','choferes_salta','Traslados al hotel en Salta, Argentina. Reservas por WhatsApp.'),settings,profile),null);
 });

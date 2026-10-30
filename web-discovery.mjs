@@ -103,7 +103,12 @@ const NOT_BUSINESS=/(?:^|[^a-z])(creador(?:a)? de contenido|content creator|ugc 
 // Other trades that mention hotels in the bio ("VIP Home & Hotel Service") but name another business.
 const LODGING=/hotel|hostal|hostel|posada|resort|lodge|suites|apart|cabana|hosteria|hospedaje|alojamiento|glamping|estancia|hacienda|inn(?:$|[^a-z])|bnb|villas?(?:$|[^a-z])/;
 const OTHER_TRADE=/(?:^|[^a-z])(barberia|barber|peluqueria|salon de belleza|estetica|nails|unas|tattoo|restaurante?|bar|cafe|cafeteria|pasteleria|panaderia|heladeria|tienda|joyeria|boutique de ropa|indumentaria|clinica|consultorio|dental|gimnasio|gym|inmobiliaria|tours?|traslados|transporte|yates?|catamaran|eventos|wedding|florer[ia]a?|spa)(?:$|[^a-z])/;
-export function otherTrade(result){const name=normalize(result.title.replace(/s*[-–|•]s*Instagram.*$/i,'')+' '+(instagramHandle(result.url)||''));return OTHER_TRADE.test(name)&&!LODGING.test(name);}
+const accountName=result=>normalize(result.title.replace(/\s*[-–|•]\s*Instagram.*$/i,'').replace(/on instagram.*$/i,'')+' '+(instagramHandle(result.url)||''));
+export function otherTrade(result){const name=accountName(result);return OTHER_TRADE.test(name)&&!LODGING.test(name);}
+// A lodging is a lodging by its own name, or because its bio talks about rooms and guests. A bio that only mentions "hotel" isn't enough
+// (barbers, drivers and photographers list hotels among their clients).
+const STAY=/(?:^|[^a-z])(habitacion(?:es)?|rooms?|suites?|huespedes|guests|check.?in|hospedate|alojate|hospedaje|alojamiento|estadias?|tu estadia|your stay|noches? de hotel|hotel boutique|boutique hotel|cabanas|departamentos? (?:temporarios|turisticos))(?:$|[^a-z])/;
+export function lodging(result){const name=accountName(result);if(LODGING.test(name))return true;if(OTHER_TRADE.test(name))return false;return STAY.test(normalize(result.snippet.replace(/^.*?on\s+Instagram\s*:\s*/i,'')));}
 export function notBusiness(result){return NOT_BUSINESS.test(normalize(result.title+' '+result.snippet));}
 export function hotelChain(result){return CHAINS.test(normalize(result.title+' '+(instagramHandle(result.url)||'')));}
 // Post dates the search index shows for an account ("handle on March 23, 2026", "handle el 23 de marzo de 2026", "handle 2d").
@@ -115,7 +120,7 @@ export function webCandidate(result,settings,profile,known=[]){
  const h=instagramHandle(result.url);if(!h||!isNewProspect(h,settings.lastSeed,known))return null;
  const text=[result.title,result.snippet].join(' ');const biography=result.snippet.replace(/^.*?on\s+Instagram\s*:\s*/i,'');
  if(isDirectory(text)||hotelChain(result)||notBusiness(result))return null;
- if(/hotel|resort|posada|hostal|apart/i.test(settings.segment)&&otherTrade(result))return null;
+ if(/hotel|resort|posada|hostal|apart/i.test(settings.segment)&&(otherTrade(result)||!lodging(result)))return null;
  if(inactiveAccount(result))return null;const geo=matchGeography(biography,settings)||queryGeography(result,settings);if(!geo||!terms(settings.segment).some(t=>contains(text,t)))return null;
  if(/(?:cerrado definitivamente|permanently closed|agencia de viajes|guia de hoteles|directorio de hoteles|asesoramos y gestionamos sus reservas)/i.test(text)&&!String(settings.segment).split(/\s*,\s*/).includes('Turismo'))return null;
  const name=result.title.replace(/\s*[-–|]\s*Instagram.*$/i,'').replace(/\s*\(@[^)]+\)/,'').trim().slice(0,200)||h;
@@ -134,7 +139,7 @@ export function webCandidate(result,settings,profile,known=[]){
 }
 export function rejectionReason(result,settings,known=[]){
  const h=instagramHandle(result.url);if(!h)return 'invalidProfile';if(!isNewProspect(h,settings.lastSeed,known))return 'duplicates';
- const text=result.title+' '+result.snippet;if(isDirectory(text))return 'directory';if(hotelChain(result))return 'chain';if(notBusiness(result))return 'creator';if(/hotel|resort|posada|hostal|apart/i.test(settings.segment)&&otherTrade(result))return 'sector';
+ const text=result.title+' '+result.snippet;if(isDirectory(text))return 'directory';if(hotelChain(result))return 'chain';if(notBusiness(result))return 'creator';if(/hotel|resort|posada|hostal|apart/i.test(settings.segment)&&(otherTrade(result)||!lodging(result)))return 'sector';
  if(inactiveAccount(result))return 'inactive';if(!matchGeography(result.snippet.replace(/^.*?on\s+Instagram\s*:\s*/i,''),settings)&&!queryGeography(result,settings))return 'location';
  if(!terms(settings.segment).some(t=>contains(text,t)))return 'sector';
  if(settings.businessTier==='premium'&&!premiumSignals(text,result.url).length)return 'category';return 'other';

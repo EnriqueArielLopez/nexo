@@ -13,13 +13,14 @@ REQUISITOS: Windows 10 u 11 de 64 bits, Microsoft Edge (viene con Windows)
 y conexión a Internet. Instagram se usa desde tu propio navegador.
 Claude es opcional: Conectar-con-Claude.cmd lo vincula si tenés la app.
 
-TANDAS DE INSTAGRAM: en el paso 2 elegí "Tanda de hoy" (5 a 30, por defecto 25)
-y tocá "Marcar los próximos". El máximo es 30 por día para cuidar tu cuenta.
-Con Claude podés tocar "Enviar con Claude" en la tanda (o pedirle "enviá la tanda
-de hoy de Nexo"): revisa la actividad de cada perfil, abre cada chat en tu Chrome,
-pega el mensaje, lo envía con 20 a 40 segundos de pausa y registra cada envío.
-Para eso necesitás la app de Claude, la extensión Claude in Chrome con tu Instagram
-abierto en Chrome, y haber abierto una vez Conectar-con-Claude.cmd.
+TANDAS DE INSTAGRAM: en el paso 2 elegí "Tanda de hoy" (5 a 100, por defecto 25)
+y tocá "Marcar los próximos". El máximo es 100 por día (lo cambiás en Ajustes).
+La primera vez tocá "Conectar Instagram" en la tanda: se abre una ventana de Edge
+de Nexo e iniciás sesión ahí (una sola vez). Después tocá "Enviar automáticamente":
+Nexo revisa cada perfil (saltea los que no son alojamientos o publican seguido),
+pega el mensaje, lo envía, confirma que salió, lo registra y espera entre 20 y 40
+segundos antes del próximo. Si Instagram muestra un aviso, la tanda se pausa sola.
+Mientras envía, no le escribas a mano a esas cuentas.
 
 NEXO · CLIENTES 3.7.2
 

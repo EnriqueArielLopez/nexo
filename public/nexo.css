@@ -534,6 +534,6 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .batch-picker .primary{min-height:34px}
 .toolbar-hint{margin-left:6px!important}
 
-.run-bulk{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:8px}.run-bulk .primary,.run-bulk .subtle-button{min-height:42px;padding:0 18px;font-size:14px}.run-help{margin:0 0 12px}
+.run-bulk{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:8px}.run-bulk .primary,.run-bulk .subtle-button{min-height:42px;padding:0 18px;font-size:14px}.run-help{margin:0 0 12px}.run-status{margin:0 0 10px;padding:10px 14px;border-radius:10px;background:var(--green-bg);color:var(--ink);font-weight:600;font-size:14px}
 
 .run-item.skipped{opacity:.55}.run-item.skipped strong{text-decoration:line-through}
