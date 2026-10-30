@@ -94,10 +94,13 @@ export function inferServices(text){
 }
 // Indexed Instagram snippets often omit the location; the query already targeted it.
 // Countries outside the Spanish-speaking list that still show up in results ("Hotel en Miami, Estados Unidos").
-const FOREIGN=/(?:^|[^a-z])(estados unidos|united states|ee ?uu|brasil|brazil|portugal|italia|italy|francia|france|alemania|germany|reino unido|united kingdom|inglaterra|canada)(?:$|[^a-z])/;
+const FOREIGN=/(?:^|[^a-z])(estados unidos|united states|ee ?uu|brasil|brazil|portugal|italia|italy|francia|france|alemania|germany|reino unido|united kingdom|inglaterra|canada|turquia|turkiye|turkey|grecia|greece|marruecos|morocco|egipto|egypt|dubai|emiratos|tailandia|thailand|indonesia|bali|maldivas|maldives|japon|japan|australia|suiza|switzerland|austria|holanda|netherlands|belgica|croacia|croatia)(?:$|[^a-z])/;
 function queryGeography(result,settings){const q=result.query;if(!q?.country)return null;const text=normalize([result.title,result.snippet].join(' '));const other=COUNTRIES.filter(c=>!settings.countries.includes(c.code)).some(c=>(countryAliases[c.code]||[c.name]).some(t=>t.codePointAt(0)<=0xffff&&new RegExp('(?:^|[^a-z])'+escaped(normalize(t))+'(?:$|[^a-z])').test(text)));if(other||FOREIGN.test(text))return null;const cities=String(settings.cities||'').split(/[,;\n]+/).map(x=>x.trim()).filter(Boolean);if(cities.length&&!q.city)return null;return {country:q.country,city:q.city||'',fromQuery:true};}
 // Big hotel chains run social media from a central team, so they aren't clients for this service.
 const CHAINS=/(?:^|[^a-z])(secrets [^()@]*resort|dreams [^()@]*resort|breathless|zoetry|hyatt|marriott|sheraton|westin|ritz.carlton|st\.? regis|four seasons|hilton|doubletree|hampton by|waldorf|conrad|intercontinental|holiday inn|crowne plaza|radisson|wyndham|sofitel|novotel|ibis|mercure|pullman|fairmont|kempinski|mandarin oriental|rosewood|melia|paradisus|riu|barcelo|iberostar|bahia principe|nh hotel|nh collection|hard rock hotel|palladium|royalton|sandos|h10 hotel|catalonia hotel|fiesta americana|live aqua|grand velas|krystal|decameron|sonesta|best western|eurostars|vincci|room mate)(?:$|[^a-z])/;
+// Creators, influencers, agencies and real estate mention hotels but aren't businesses that need the service (some are competitors).
+const NOT_BUSINESS=/(?:^|[^a-z])(creador(?:a)? de contenido|content creator|ugc creator|influencer|blogger|bloguera|vlogger|travel ?(?:&|y|and) ?life|travel lover|amante de los viajes|viajer[oa] ?(?:por el mundo|empedernid[oa])|fotograf[oa] de|fotografia (?:de|para) hoteles|filmmaker|videograf[oa]|community manager|social media manager|marketing digital|agencia de (?:marketing|publicidad|contenido)|real estate|inmobiliaria|bienes raices|colaboraciones por dm|colabs? por dm|embajador(?:a)? de marca|agente de viajes|travel agent|(?:los )?mejores hoteles|hoteles top|top hoteles|especialistas en hoteles|hoteles (?:de lujo )?para parejas|periodista|revista|editorial|gerente (?:en|de|general)|liderazgo|perfumeria|aromas? (?:para|que)|tu hogar en hotel|official bar and restaurant)(?:$|[^a-z])/;
+export function notBusiness(result){return NOT_BUSINESS.test(normalize(result.title+' '+result.snippet));}
 export function hotelChain(result){return CHAINS.test(normalize(result.title+' '+(instagramHandle(result.url)||'')));}
 // Post dates the search index shows for an account ("handle on March 23, 2026", "handle el 23 de marzo de 2026", "handle 2d").
 const MONTHS={january:0,february:1,march:2,april:3,may:4,june:5,july:6,august:7,september:8,october:9,november:10,december:11,enero:0,febrero:1,marzo:2,abril:3,mayo:4,junio:5,julio:6,agosto:7,septiembre:8,setiembre:8,octubre:9,noviembre:10,diciembre:11};
@@ -107,7 +110,7 @@ export function inactiveAccount(result){const t=normalize([result.title,result.s
 export function webCandidate(result,settings,profile,known=[]){
  const h=instagramHandle(result.url);if(!h||!isNewProspect(h,settings.lastSeed,known))return null;
  const text=[result.title,result.snippet].join(' ');const biography=result.snippet.replace(/^.*?on\s+Instagram\s*:\s*/i,'');
- if(isDirectory(text)||hotelChain(result))return null;
+ if(isDirectory(text)||hotelChain(result)||notBusiness(result))return null;
  if(inactiveAccount(result))return null;const geo=matchGeography(biography,settings)||queryGeography(result,settings);if(!geo||!terms(settings.segment).some(t=>contains(text,t)))return null;
  if(/(?:cerrado definitivamente|permanently closed|agencia de viajes|guia de hoteles|directorio de hoteles|asesoramos y gestionamos sus reservas)/i.test(text)&&!String(settings.segment).split(/\s*,\s*/).includes('Turismo'))return null;
  const name=result.title.replace(/\s*[-–|]\s*Instagram.*$/i,'').replace(/\s*\(@[^)]+\)/,'').trim().slice(0,200)||h;
@@ -126,7 +129,7 @@ export function webCandidate(result,settings,profile,known=[]){
 }
 export function rejectionReason(result,settings,known=[]){
  const h=instagramHandle(result.url);if(!h)return 'invalidProfile';if(!isNewProspect(h,settings.lastSeed,known))return 'duplicates';
- const text=result.title+' '+result.snippet;if(isDirectory(text))return 'directory';if(hotelChain(result))return 'chain';
+ const text=result.title+' '+result.snippet;if(isDirectory(text))return 'directory';if(hotelChain(result))return 'chain';if(notBusiness(result))return 'creator';
  if(inactiveAccount(result))return 'inactive';if(!matchGeography(result.snippet.replace(/^.*?on\s+Instagram\s*:\s*/i,''),settings)&&!queryGeography(result,settings))return 'location';
  if(!terms(settings.segment).some(t=>contains(text,t)))return 'sector';
  if(settings.businessTier==='premium'&&!premiumSignals(text,result.url).length)return 'category';return 'other';
@@ -188,6 +191,6 @@ export async function discoverWeb({store,seed,web=new PublicWebDiscovery(),progr
   state.status=cancelled()?'paused':'completed';state.stage=cancelled()?'Búsqueda detenida':`${state.found} candidatos encontrados en la web`;
  }catch(e){state.status=cancelled()?'paused':'failed';state.error=cancelled()?'':e.message;state.stage=cancelled()?'Búsqueda detenida':'La búsqueda se detuvo; se conservaron los candidatos encontrados.';}
  state.outcome=state.found>=state.target?'target-reached':'partial';
- state.summary=`${state.found}/${state.target} candidatos · ${state.queries} consultas · ${state.pages} páginas · ${state.scanned} resultados examinados. ${state.rejected.duplicates||0} repetidos; ${state.rejected.location||0} sin ubicación coincidente; ${state.rejected.sector||0} sin rubro coincidente; ${state.rejected.category||0} sin señales de alta categoría; ${state.rejected.directory||0} directorios descartados; ${state.rejected.inactive||0} cuentas cerradas o sin publicaciones; ${state.rejected.active||0} descartadas porque publican seguido; ${state.rejected.chain||0} cadenas; ${state.skipped||0} consultas salteadas por errores de carga. Actividad, encaje y capacidad de pago requieren revisión. ${state.found<state.target?'Objetivo incompleto: no se inventaron contactos.':''}`;
+ state.summary=`${state.found}/${state.target} candidatos · ${state.queries} consultas · ${state.pages} páginas · ${state.scanned} resultados examinados. ${state.rejected.duplicates||0} repetidos; ${state.rejected.location||0} sin ubicación coincidente; ${state.rejected.sector||0} sin rubro coincidente; ${state.rejected.category||0} sin señales de alta categoría; ${state.rejected.directory||0} directorios descartados; ${state.rejected.inactive||0} cuentas cerradas o sin publicaciones; ${state.rejected.active||0} descartadas porque publican seguido; ${state.rejected.chain||0} cadenas; ${state.rejected.creator||0} creadores, agencias o inmobiliarias; ${state.skipped||0} consultas salteadas por errores de carga. Actividad, encaje y capacidad de pago requieren revisión. ${state.found<state.target?'Objetivo incompleto: no se inventaron contactos.':''}`;
  state.usage={webRequests:web.calls,paidApiCalls:0};emit();store.setJob('lastSearch',{...state,seed,at:new Date().toISOString()});return state;
 }
