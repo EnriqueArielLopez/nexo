@@ -4,7 +4,7 @@ import {mkdtempSync,rmSync} from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import {Store} from './core.mjs';
-import {parseSearchResults,webCandidate,queryPlan,matchGeography,inferServices,isPublicAddress,PublicWebDiscovery,discoverWeb,instagramHandle,rejectionReason,postDates,notBusiness} from './web-discovery.mjs';
+import {parseSearchResults,webCandidate,queryPlan,matchGeography,inferServices,isPublicAddress,PublicWebDiscovery,discoverWeb,instagramHandle,rejectionReason,postDates,notBusiness,otherTrade,hotelChain} from './web-discovery.mjs';
 const settings={lastSeed:'https://www.instagram.com/proveedor_qa/',segment:'Hoteles',countries:['AR'],cities:'Salta',offer:'Creación de contenido',sender:'Marca QA',maxResults:100};
 const profile={services:'creación de contenido y fotografía'};
 const result=(h='hotel_qa')=>({url:'https://www.instagram.com/'+h+'/',title:'Hotel QA (@'+h+') - Instagram',snippet:'Hotel en Salta, Argentina. Reservas por WhatsApp. Habitaciones y spa.'});
@@ -89,4 +89,17 @@ test('creadores, influencers, revistas, agencias y perfiles personales no son ho
  const bio=(title,b)=>({url:'https://www.instagram.com/cuenta_qa/',title,snippet:b+' Salta, Argentina.'});
  for(const [t,b] of [['Cancún Luxury | Travel & Life','🎬 Creador de Contenido & Lifestyle 🏨 Hoteles de lujo, villas & Real Estate 📩 Proyectos & Colaboraciones por DM'],['Editorial Destinos de Lujo','LOS MEJORES HOTELES DE CHILE Periodista'],['Camila | Hoteles de Lujo para Parejas','🏨 Hoteles top para parejas'],['MLH','Especialistas en Hoteles Boutique de Lujo'],['ZENSIRA','Transforma tu hogar en hotel de lujo. Perfumería ambiental'],['Emilio','Hotelería de lujo & liderazgo Gerente en Awasi'],['Lujo Bar','The official bar and restaurant of Farmfield Hotel']]){const r=bio(t,b);assert.ok(notBusiness(r),t);assert.equal(webCandidate(r,settings,profile),null,t);assert.equal(rejectionReason(r,settings),'creator',t);}
  for(const [t,b] of [['Hotel QA','Hotel en Salta, Argentina. Reservas por WhatsApp. Habitaciones y spa.'],['Hotel Huelen','Hotel Huelen Lujo, discreción y noches pensadas'],['Taanah Glamping','Glamping de lujo HOTEL & SPA'],['Hotel Boutique','Hotel boutique de lujo con contenido propio']])assert.equal(notBusiness(bio(t,b)),false,t);
+});
+test('barberías, restaurantes y otras cadenas que nombran hoteles en la bio no son hoteles',()=>{
+ const r=(title,h)=>({title,url:`https://www.instagram.com/${h}/`,snippet:''});
+ assert.ok(otherTrade(r('Jiram Romero | Barbería de Lujo Cancún','jirambmx')));assert.ok(otherTrade(r('Restaurante El Faro','elfaro')));
+ for(const [t,h] of [['Hotel Spa Termas','hoteltermas'],['La Mezquita','la.mezquita.hotelspa'],['EOLO - Patagonia','eolo_patagonia']])assert.equal(otherTrade(r(t,h)),false,t);
+ for(const [t,h] of [['Hotel Indigo Lima Miraflores','hotelindigo'],['SLS Cancun Hotel','slscancun'],['El Anantara Villa Padierna','anantaramarbella']])assert.ok(hotelChain(r(t,h)),t);
+ assert.equal(hotelChain(r('Hotel Posada del Sol','posadadelsolhotel')),false);
+});
+test('cada búsqueda sigue desde la consulta donde terminó la anterior',async()=>{
+ const f=fixture();try{const asked=[];const web=new PublicWebDiscovery({delayMs:0,read:async url=>{asked.push(decodeURIComponent(new URL(url).searchParams.get('q')||''));return {html:page([])};}});
+ let stop=false;await discoverWeb({store:f.store,seed:settings.lastSeed,web,cancelled:()=>stop||(stop=asked.length>=3,false)});const first=f.store.job('searchCursor').next;assert.ok(first>0);
+ asked.length=0;stop=false;await discoverWeb({store:f.store,seed:settings.lastSeed,web,cancelled:()=>asked.length>=1});const plan=queryPlan({...f.store.settings(),lastSeed:settings.lastSeed});assert.equal(asked[0],plan[first].q);
+ }finally{f.close();}
 });
