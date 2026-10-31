@@ -4,8 +4,11 @@ import {mkdtempSync,rmSync} from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import {Store} from './core.mjs';
-import {InstagramSender} from './instagram-sender.mjs';
+import {InstagramSender,postDate} from './instagram-sender.mjs';
 
+const A='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
+// The post code a post published that day would have (its id starts with the time since Instagram's epoch).
+const codeOf=d=>{let id=BigInt(new Date(d+'T12:00:00Z').getTime()-1314220021721)<<23n,c='';for(let i=0;i<11;i++){c=A[Number(id%64n)]+c;id/=64n;}return c;};
 const recent=n=>Array.from({length:n},(_,i)=>new Date(Date.now()-(i*7+1)*864e5).toISOString().slice(0,10));
 // A fake Instagram behind the DevTools protocol: profiles, chats with a text box, and what Enter does.
 function fakeInstagram(profiles,{history={}}={}){
@@ -21,7 +24,7 @@ function fakeInstagram(profiles,{history={}}={}){
   case 'Input.dispatchKeyEvent':if(params.type==='keyDown'&&params.key==='Enter'){if(params.modifiers===8)box+='\n';else{chats[handleOf()]=(chats[handleOf()]||'')+' '+box;box='';}}return {};
   case 'Runtime.evaluate':{const e=params.expression;
    if(e==='document.readyState')return {result:{value:'complete'}};
-   if(e.startsWith('(async()=>{const wait')){const p=profiles[handleOf()];return {result:{value:p?{title:p.title,text:p.text||'',dates:p.dates||[],posts:(p.dates||[]).length}:{title:'Instagram',text:'Esta página no está disponible.',dates:[],posts:0}}};}
+   if(e.startsWith('(async()=>{const wait')){const p=profiles[handleOf()];return {result:{value:p?{title:p.title,text:p.text||'',codes:(p.dates||[]).map(codeOf),empty:!(p.dates||[]).length}:{title:'Instagram',text:'Esta página no está disponible.',codes:[],empty:false}}};}
    if(e.includes('getBoundingClientRect'))return {result:{value:url.startsWith('https://ig.me/m/')?{x:10,y:10,text:box}:null}};
    if(e.includes('innerText'))return {result:{value:url.startsWith('https://ig.me/m/')?'Chat '+(chats[handleOf()]||'')+' '+box:''}};
    return {result:{value:null}};}
@@ -53,7 +56,18 @@ test('envío automático: sin sesión de Instagram abre el inicio de sesión y n
  const f=fixture();try{
   const ig=fakeInstagram({});const base=ig.client.call;ig.client.call=async(m,p)=>m==='Network.getCookies'?{cookies:[]}:base(m,p);
   const s=new InstagramSender(os.tmpdir(),{store:f.store,connect:async()=>ig.client,readFile:async()=>'9222\n/devtools/browser/abc',pause:[0,0],wait:async()=>{}});
-  s.start([lead(f.store,'hotel_sol')]);await s.done;
+  s.loginWait=2;s.start([lead(f.store,'hotel_sol')]);await s.done;
   assert.equal(s.state.status,'login');assert.ok(ig.calls.some(([m,p])=>m==='Page.navigate'&&/accounts\/login/.test(p.url)));assert.equal(f.store.counts().daily,0);
+ }finally{f.close();}
+});
+test('las fechas salen del código de cada publicación, sin abrirla',()=>{
+ assert.equal(postDate('Deawu9VkSEG'),'2026-10-13');assert.equal(postDate(codeOf('2025-03-02')),'2025-03-02');assert.equal(postDate('$$$'),'');
+});
+test('envío automático: si falta iniciar sesión, espera a que entre y sigue solo',async()=>{
+ const f=fixture();try{
+  const ig=fakeInstagram({hotel_sol:{title:'Hotel Sol (@hotel_sol)',dates:['2025-01-01']}});let checks=0;const base=ig.client.call;ig.client.call=async(m,p)=>m==='Network.getCookies'?{cookies:++checks>2?[{name:'ds_user_id',value:'1'}]:[]}:base(m,p);
+  const s=new InstagramSender(os.tmpdir(),{store:f.store,connect:async()=>ig.client,readFile:async()=>'9222\n/devtools/browser/abc',pause:[0,0],wait:async()=>{}});
+  s.start([lead(f.store,'hotel_sol')]);await s.done;
+  assert.equal(s.state.status,'done');assert.equal(s.state.sent,1);
  }finally{f.close();}
 });

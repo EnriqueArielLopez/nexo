@@ -57,3 +57,11 @@ test('la búsqueda descarta cuentas que según el índice publican casi todas la
  const result=await discoverWeb({store:f.store,seed:settings.lastSeed,web});assert.equal(result.found,2);assert.equal(result.rejected.active,1);
  const all=f.store.list({includeArchived:true});const act=all.find(l=>l.handle==='activo_qa');assert.equal(act.archived,1);assert.match(f.store.gate(act),/archivado|Cuenta activa/);assert.equal(JSON.parse(all.find(l=>l.handle==='quieto_qa').activity).verdict,'inactive');assert.ok(!f.store.list().some(l=>l.handle==='activo_qa'));
 }finally{f.close();}});
+test('la búsqueda revisa cada perfil en Instagram: descarta las que publican seguido, las que no existen y las que no son alojamientos',async()=>{const f=fixture();try{f.store.saveSettings({maxResults:3});const d=n=>new Date(Date.now()-n*864e5).toISOString().slice(0,10);let q=0;
+ const web={calls:0,profile:async()=>({services:'contenido'}),search:async s=>{if(s.startsWith('site:instagram.com/p/ '))throw Error('no debería usar el índice');q++;return q===1?[candidate('activo_qa'),candidate('quieto_qa'),candidate('borrado_qa')]:[candidate('otro_qa_'+q)];}};
+ const profiles={activo_qa:{title:'Hotel Activo',dates:[2,9,16,23,30,37,44].map(d)},quieto_qa:{title:'Hotel Quieto',dates:[60,200].map(d)},borrado_qa:{missing:true}};
+ const result=await discoverWeb({store:f.store,seed:settings.lastSeed,web,rest:async()=>{},inspect:async h=>profiles[h]||{title:'Hotel '+h,dates:[]}});
+ assert.equal(result.found,3);assert.equal(result.rejected.active,1);assert.equal(result.rejected.missing,1);
+ const all=f.store.list({includeArchived:true}),quiet=JSON.parse(all.find(l=>l.handle==='quieto_qa').activity);assert.equal(quiet.verdict,'inactive');assert.equal(quiet.source,'profile');
+ assert.ok(!f.store.list().some(l=>['activo_qa','borrado_qa'].includes(l.handle)));
+}finally{f.close();}});

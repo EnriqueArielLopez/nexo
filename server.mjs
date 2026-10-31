@@ -49,7 +49,7 @@ async function runWebSearch(c,seed){
   c.store.setJob('lastSearch',{...c.search,seed,at:new Date().toISOString()});
   c.browserResume=()=>{c.browserResume=null;c.search={...c.search,status:'running',humanRequired:false,stage:'Revisando la verificación del buscador'};resume();};
  })});
- try{await discoverWeb({store:c.store,seed,web,progress:next=>{cancel=cancel||c.search.cancel;c.search={...next,cancel};},cancelled:()=>stopping||cancel||!!c.search.cancel||controller.signal.aborted,save:()=>excel(c)});}
+ try{await discoverWeb({store:c.store,seed,web,inspect:h=>c.sender.inspect(h),progress:next=>{cancel=cancel||c.search.cancel;c.search={...next,cancel};},cancelled:()=>stopping||cancel||!!c.search.cancel||controller.signal.aborted,save:()=>excel(c)});}
  finally{c.browserResume=null;if(c.webAbort===controller)c.webAbort=null;}
 }
 const staticFiles={'/':['nexo.html','text/html; charset=utf-8'],'/app.js':['nexo.js','text/javascript; charset=utf-8'],'/style.css':['nexo.css','text/css; charset=utf-8'],'/geography.js':['../geography.mjs','text/javascript; charset=utf-8'],...Object.fromEntries([400,500,600,700,800].map(w=>[`/fonts/Manrope-${w}.ttf`,[`fonts/Manrope-${w}.ttf`,'font/ttf']]))};

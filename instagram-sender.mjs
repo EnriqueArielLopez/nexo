@@ -18,18 +18,21 @@ export const WARNING=/intentalo m[aá]s tarde|int[eé]ntalo de nuevo m[aá]s tar
 export const CANT_RECEIVE=/no puede recibir (?:tu|mensajes)|can.t receive (?:your )?messages|not accepting messages|no acepta mensajes/i;
 export const MISSING=/esta p[aá]gina no est[aá] disponible|sorry, this page isn.t available|this page isn.t available|el enlace que seleccionaste puede no funcionar/i;
 
-// Runs in the profile page: name, availability, and the dates of the last 12 non-pinned posts (opening the first one and
-// moving with Next, as a person would).
-const PROFILE=`(async()=>{const wait=ms=>new Promise(r=>setTimeout(r,ms));for(let i=0;i<40&&!document.querySelector('main');i++)await wait(250);await wait(1500);
-const text=(document.querySelector('main')||document.body).innerText.slice(0,3000);const title=document.title;
-const links=[...document.querySelectorAll('main a[href*="/p/"],main a[href*="/reel/"]')];const first=links.find(a=>!a.querySelector('svg[aria-label*="ijad"],svg[aria-label*="inned"]'));
-const code=()=>{const p=location.pathname.split('/'),i=p.findIndex(x=>x==='p'||x==='reel');return i>=0?p[i+1]:undefined;};const dates=[];if(first){first.click();for(let i=0;i<12;i++){let t=null;for(let k=0;k<40&&!t;k++){await wait(200);const c=code();if(!c)continue;const el=document.querySelector('[role="dialog"] a[href*="/'+c+'/"] time[datetime]')||document.querySelector('[role="dialog"] time[datetime]');t=el?.getAttribute('datetime');}if(!t)break;dates.push(t.slice(0,10));const next=[...document.querySelectorAll('[role="dialog"] button')].find(b=>b.querySelector('svg[aria-label="Siguiente"],svg[aria-label="Next"]'));if(!next)break;const prev=code();next.click();for(let k=0;k<25&&code()===prev;k++)await wait(200);if(code()===prev)break;await wait(700+Math.random()*700);}}
-return {title,text,dates,posts:links.length};})()`;
+// Runs in the profile page: name, availability and the links of the grid. Each post's code carries its publication time,
+// so the last posts' dates come out without opening them (it works without signing in).
+const PROFILE=`(async()=>{const wait=ms=>new Promise(r=>setTimeout(r,ms));for(let i=0;i<40&&!document.querySelector('main');i++)await wait(250);
+const grid=()=>document.querySelectorAll('main a[href*="/p/"],main a[href*="/reel/"]').length;for(let i=0;i<16&&!grid();i++)await wait(250);await wait(800);
+const text=(document.querySelector('main')||document.body).innerText.slice(0,3000);
+const codes=[...document.querySelectorAll('main a[href*="/p/"],main a[href*="/reel/"]')].map(a=>{const p=a.getAttribute('href').split('/').filter(Boolean),i=p.findIndex(x=>x==='p'||x==='reel');return p[i+1];}).filter(Boolean);
+return {title:document.title,text,codes,empty:/no posts yet|a[uú]n no hay publicaciones|todav[ií]a no hay publicaciones/i.test(text)};})()`;
+const ALPHABET='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
+// Instagram's media ids start with the milliseconds since its own epoch; the post code is that id in base 64.
+export function postDate(code){let id=0n;for(const ch of String(code).slice(0,11)){const n=ALPHABET.indexOf(ch);if(n<0)return '';id=id*64n+BigInt(n);}const at=new Date(Number(id>>23n)+1314220021721);return at.getFullYear()>2011&&at-Date.now()<864e5?at.toISOString().slice(0,10):'';}
 const BOX=`document.querySelector('div[contenteditable="true"][role="textbox"]')`;
 
 export class InstagramSender {
- constructor(profileDir,{store,onChange,saveExcel=async()=>{},connect=DevtoolsConnection.connect,launch=spawn,edge=findEdge,readFile=fs.readFile,pause=[20000,40000],wait=sleep}={}){
-  Object.assign(this,{profileDir:path.resolve(profileDir),store,onChange,saveExcel,connect,launch,edge,readFile,pause,wait});this.client=null;this.sessionId='';this.targetId='';
+ constructor(profileDir,{store,onChange,saveExcel=async()=>{},connect=DevtoolsConnection.connect,launch=spawn,edge=findEdge,readFile=fs.readFile,pause=[20000,40000],wait=sleep,loginWait=300}={}){
+  Object.assign(this,{profileDir:path.resolve(profileDir),store,onChange,saveExcel,connect,launch,edge,readFile,pause,wait,loginWait});this.client=null;this.sessionId='';this.targetId='';
   this.state={status:'idle',total:0,sent:0,skipped:0,current:'',nextAt:0,message:'',items:[]};
  }
  publicState(){return {...this.state,items:this.state.items.map(i=>({...i}))};}
@@ -61,6 +64,17 @@ export class InstagramSender {
  async openLogin(){await this.ensure();await this.show();if(!(await this.loggedIn()))await this.go('https://www.instagram.com/accounts/login/');else await this.go('https://www.instagram.com/');return this.loggedIn();}
  async key(modifiers=0){const k={key:'Enter',code:'Enter',windowsVirtualKeyCode:13,nativeVirtualKeyCode:13,modifiers};await this.client.call('Input.dispatchKeyEvent',{type:'keyDown',...k,text:'\r',unmodifiedText:'\r'},this.sessionId);await this.client.call('Input.dispatchKeyEvent',{type:'keyUp',...k},this.sessionId);}
  async box(){const r=await this.eval(`(()=>{const b=${BOX};if(!b)return null;b.scrollIntoView({block:'center'});const r=b.getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2,text:b.innerText};})()`);return r;}
+ // One page for searches and sends: they take turns.
+ exclusive(fn){const run=(this.lock||Promise.resolve()).then(fn,fn);this.lock=run.catch(()=>{});return run;}
+ // Reads a profile: whether it exists, its name, and the dates of its last posts (null if the grid didn't load).
+ async read(handle){
+  await this.go(`https://www.instagram.com/${handle}/`);const p=await this.eval(PROFILE);const page=p.text+' '+p.title;
+  const dates=[...new Set(p.codes.map(postDate).filter(Boolean))].sort().reverse().slice(0,12);
+  return {title:flat(p.title),warning:WARNING.test(p.text),missing:MISSING.test(page)||/isn.t available|no est[aá] disponible/i.test(p.title),dates:dates.length||p.empty?dates:null};
+ }
+ // For the search: checks one account in this window, minimized if it wasn't open.
+ inspect(handle){return this.exclusive(async()=>{if(!this.client){await this.ensure();await this.minimize().catch(()=>{});}else await this.ensure();return this.read(handle);});}
+ async minimize(){const {windowId}=await this.client.call('Browser.getWindowForTarget',{targetId:this.targetId});await this.client.call('Browser.setWindowBounds',{windowId,bounds:{windowState:'minimized'}});}
  async click(x,y){for(const type of ['mousePressed','mouseReleased'])await this.client.call('Input.dispatchMouseEvent',{type,x,y,button:'left',clickCount:1},this.sessionId);}
  log(item,status,note){Object.assign(item,{status,note});this.state.current='';this.emit();}
  emit(){this.onChange?.(this.publicState());}
@@ -73,13 +87,19 @@ export class InstagramSender {
  }
  async run(){
   await this.ensure();await this.show();
-  if(!(await this.loggedIn())){await this.go('https://www.instagram.com/accounts/login/');this.state.status='login';this.state.message='Iniciá sesión en Instagram en la ventana de Nexo y volvé a tocar «Enviar automáticamente».';this.emit();return;}
+  if(!(await this.loggedIn())){
+   // First time: the user signs in to Instagram in this window and the batch starts by itself.
+   await this.go('https://www.instagram.com/accounts/login/');this.state.status='login';this.state.message='Iniciá sesión en Instagram en la ventana que se abrió. Apenas entres, Nexo empieza a enviar solo.';this.emit();
+   for(let i=0;i<this.loginWait&&!this.cancel;i++){await this.wait(3000);if(await this.loggedIn().catch(()=>false))break;}
+   if(this.cancel||!(await this.loggedIn().catch(()=>false))){this.state.status='login';this.state.message='No se inició sesión en Instagram. Iniciá sesión en la ventana de Nexo y tocá «Reanudar el envío».';this.emit();return;}
+   this.state.status='running';await this.wait(4000);
+  }
   const items=this.state.items;
   for(const [n,item] of items.entries()){
    if(this.cancel)break;
    this.state.current=item.handle;this.state.message=`Revisando @${item.handle} (${n+1} de ${items.length})`;this.emit();
    let sent=false;
-   try{sent=await this.one(item);}catch(e){if(e.stopBatch){this.log(item,'failed',e.message);this.state.status='paused';this.state.message=e.message;this.emit();return;}this.log(item,'failed',e.message);}
+   try{sent=await this.exclusive(()=>this.one(item));}catch(e){if(e.stopBatch){this.log(item,'failed',e.message);this.state.status='paused';this.state.message=e.message;this.emit();return;}this.log(item,'failed',e.message);}
    if(item.status!=='sent')this.state.skipped++;else this.state.sent++;
    this.emit();
    const rest=items.slice(n+1).some(i=>i.status==='pending');
@@ -93,13 +113,12 @@ export class InstagramSender {
   const store=this.store,lead=store.get(item.id);
   const block=lead&&store.gate({...lead,approved:1,qualification:''},new Date());
   if(!lead||block){this.log(item,'skipped',block||'Ya no está en la lista');return false;}
-  await this.go(`https://www.instagram.com/${item.handle}/`);
-  const p=await this.eval(PROFILE);
-  if(WARNING.test(p.text))throw Object.assign(Error('Instagram mostró un aviso. Se pausó la tanda: revisá la ventana de Nexo antes de seguir.'),{stopBatch:true});
-  if(MISSING.test(p.text+' '+p.title)){store.update(item.id,{dnc:true});this.log(item,'skipped','La cuenta ya no existe');return false;}
-  if(otherTrade({title:p.title,url:`https://www.instagram.com/${item.handle}/`})){store.update(item.id,{dnc:true});this.log(item,'skipped','No es un alojamiento: '+flat(p.title).slice(0,60));return false;}
-  let checked=false;try{checked=['profile','user'].includes(JSON.parse(lead.activity||'{}').source);}catch{}
-  if(!checked){if(!p.posts){this.log(item,'skipped','No se pudieron leer sus publicaciones');return false;}const a=store.setActivity(item.id,{dates:p.dates,source:'profile',note:'Revisado por Nexo antes de enviar'});if(a.verdict==='active'){store.update(item.id,{approved:false});this.log(item,'skipped',`Publica seguido (${a.weeks} de ${a.span} semanas)`);return false;}}
+  const p=await this.read(item.handle);
+  if(p.warning)throw Object.assign(Error('Instagram mostró un aviso. Se pausó la tanda: revisá la ventana de Nexo antes de seguir.'),{stopBatch:true});
+  if(p.missing){store.update(item.id,{dnc:true});this.log(item,'skipped','La cuenta ya no existe');return false;}
+  if(otherTrade({title:p.title,url:`https://www.instagram.com/${item.handle}/`})){store.update(item.id,{dnc:true});this.log(item,'skipped','No es un alojamiento: '+p.title.slice(0,60));return false;}
+  if(p.dates){const a=store.setActivity(item.id,{dates:p.dates,source:'profile',note:'Revisado por Nexo antes de enviar'});if(a.verdict==='active'){store.update(item.id,{approved:false});this.log(item,'skipped',`Publica seguido (${a.weeks} de ${a.span} semanas)`);return false;}}
+  else{let checked=false;try{checked=['profile','user'].includes(JSON.parse(lead.activity||'{}').source);}catch{}if(!checked){this.log(item,'skipped','No se pudieron leer sus publicaciones');return false;}}
   this.state.message=`Escribiendo a @${item.handle}`;this.emit();
   await this.go(`https://ig.me/m/${item.handle}`);
   let b=null;for(let i=0;i<50&&!b;i++){await sleep(400);const body=await this.eval(`document.body.innerText.slice(0,4000)`).catch(()=>'');if(WARNING.test(body))throw Object.assign(Error('Instagram mostró un aviso. Se pausó la tanda: revisá la ventana de Nexo antes de seguir.'),{stopBatch:true});if(CANT_RECEIVE.test(body)){store.update(item.id,{dnc:true});this.log(item,'skipped','La cuenta no acepta mensajes');return false;}
