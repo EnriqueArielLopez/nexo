@@ -26,7 +26,9 @@ function fakeInstagram(profiles,{history={}}={}){
    if(e==='document.readyState')return {result:{value:'complete'}};
    if(e.startsWith('(async()=>{const wait')){const p=profiles[handleOf()];return {result:{value:p?{title:p.title,text:p.text||'',codes:(p.dates||[]).map(codeOf),empty:!(p.dates||[]).length}:{title:'Instagram',text:'Esta página no está disponible.',codes:[],empty:false}}};}
    if(e.includes('getBoundingClientRect'))return {result:{value:url.startsWith('https://ig.me/m/')?{x:10,y:10,text:box}:null}};
-   if(e.includes('innerText'))return {result:{value:url.startsWith('https://ig.me/m/')?'Chat '+(chats[handleOf()]||'')+' '+box:''}};
+   // The open conversation, or the whole page, whose list of chats shows previews of the messages sent to others.
+   if(e.includes('Lista de conversaciones'))return {result:{value:url.startsWith('https://ig.me/m/')?'Chat @'+handleOf()+' '+(chats[handleOf()]||'')+' '+box:''}};
+   if(e.includes('innerText'))return {result:{value:Object.entries(chats).map(([h,t])=>h+' Tú: '+t).join(' ')+(url.startsWith('https://ig.me/m/')?' Chat @'+handleOf()+' '+(chats[handleOf()]||'')+' '+box:'')}};
    return {result:{value:null}};}
   default:return {};}}};
  return {client,chats,calls};

@@ -33,6 +33,9 @@ const ALPHABET='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_
 // Instagram's media ids start with the milliseconds since its own epoch; the post code is that id in base 64.
 export function postDate(code){let id=0n;for(const ch of String(code).slice(0,11)){const n=ALPHABET.indexOf(ch);if(n<0)return '';id=id*64n+BigInt(n);}const at=new Date(Number(id>>23n)+1314220021721);return at.getFullYear()>2011&&at-Date.now()<864e5?at.toISOString().slice(0,10):'';}
 const BOX=`document.querySelector('div[contenteditable="true"][role="textbox"]')`;
+// Text of the open conversation only: the list of chats on the left shows previews of the messages sent to other
+// accounts, and must never count as this one's.
+const PANE=`(()=>{const box=${BOX},list=document.querySelector('[aria-label="Lista de conversaciones"],[aria-label="Conversation list"],[aria-label="Thread list"]');const main=document.querySelector('[role="main"]')||document.body;if(!box){let t=main.innerText;if(list&&main.contains(list))t=t.replace(list.innerText,'');return t;}let el=box;while(el.parentElement&&el.parentElement!==document.body&&!(list&&el.parentElement.contains(list)))el=el.parentElement;return el.innerText;})()`;
 
 export class InstagramSender {
  constructor(profileDir,{store,onChange,saveExcel=async()=>{},connect=DevtoolsConnection.connect,launch=spawn,edge=findBrowser,readFile=fs.readFile,pause=[20000,40000],wait=sleep,loginWait=300,bridge=null}={}){
@@ -132,13 +135,15 @@ export class InstagramSender {
   else{let checked=false;try{checked=['profile','user'].includes(JSON.parse(lead.activity||'{}').source);}catch{}if(!checked){this.log(item,'skipped','No se pudieron leer sus publicaciones');return false;}}
   this.state.message=`Escribiendo a @${item.handle}`;this.emit();
   await this.go(`https://ig.me/m/${item.handle}`);
-  let b=null;for(let i=0;i<50&&!b;i++){await sleep(400);const body=await this.eval(`document.body.innerText.slice(0,4000)`).catch(()=>'');if(WARNING.test(body))throw Object.assign(Error('Instagram mostró un aviso. Se pausó la tanda: revisá la ventana de Nexo antes de seguir.'),{stopBatch:true});if(CANT_RECEIVE.test(body)){store.update(item.id,{dnc:true});this.log(item,'skipped','La cuenta no acepta mensajes');return false;}
+  let b=null;for(let i=0;i<50&&!b;i++){await sleep(400);const pane=await this.eval(PANE).catch(()=>'');if(WARNING.test(pane))throw Object.assign(Error('Instagram mostró un aviso. Se pausó la tanda: revisá la ventana de Nexo antes de seguir.'),{stopBatch:true});
    // First visit to the inbox: Instagram asks about notifications.
    await this.eval(`(()=>{const b=[...document.querySelectorAll('[role="dialog"] button')].find(x=>/^(Ahora no|Not Now)$/i.test(x.innerText.trim()));if(b)b.click();})()`).catch(()=>{});
    b=await this.box();}
-  if(!b){this.log(item,'skipped','No se abrió el chat');return false;}
+  // Only once the chat finished loading without a text box does it count as an account that doesn't accept messages.
+  if(!b){const pane=await this.eval(PANE).catch(()=>'');if(CANT_RECEIVE.test(pane)){store.update(item.id,{dnc:true});this.log(item,'skipped','La cuenta no acepta mensajes');return false;}this.log(item,'skipped','No se abrió el chat');return false;}
   const message=String(item.message||'').replace(/\r/g,''),probe=flat(message).slice(0,40);
-  const before=flat(await this.eval(`(document.querySelector('[role="main"]')||document.body).innerText`));
+  const before=flat(await this.eval(PANE));
+  if(!before.toLowerCase().includes(item.handle.toLowerCase()))throw Object.assign(Error(`No se abrió el chat de @${item.handle}. Se pausó la tanda sin enviar nada.`),{stopBatch:true});
   // Never twice: if the chat already shows the proposal, it was sent earlier (by hand, for example).
   if(probe&&before.replace(flat(b.text),'').includes(probe)){const e=store.reserve(item.id);store.finish(e.event,'sent','Ya figuraba en el chat');this.log(item,'sent','Ya figuraba enviado en el chat');await this.saveExcel().catch(()=>{});return false;}
   if(flat(b.text)){await this.click(b.x,b.y);await this.client.call('Input.dispatchKeyEvent',{type:'keyDown',key:'a',code:'KeyA',windowsVirtualKeyCode:65,modifiers:2},this.sessionId);await this.client.call('Input.dispatchKeyEvent',{type:'keyUp',key:'a',code:'KeyA',windowsVirtualKeyCode:65,modifiers:2},this.sessionId);await this.client.call('Input.dispatchKeyEvent',{type:'keyDown',key:'Delete',code:'Delete',windowsVirtualKeyCode:46},this.sessionId);await this.client.call('Input.dispatchKeyEvent',{type:'keyUp',key:'Delete',code:'Delete',windowsVirtualKeyCode:46},this.sessionId);}
@@ -150,7 +155,7 @@ export class InstagramSender {
   if(!draft||flat(draft.text)!==flat(message))throw Object.assign(Error(`El mensaje para @${item.handle} no se pegó completo. Se pausó la tanda sin enviarlo.`),{stopBatch:true});
   const event=store.reserve(item.id);
   await this.key(0);
-  for(let i=0;i<30;i++){await sleep(500);const now=await this.box().catch(()=>null);const text=flat(await this.eval(`(document.querySelector('[role="main"]')||document.body).innerText`).catch(()=>''));
+  for(let i=0;i<30;i++){await sleep(500);const now=await this.box().catch(()=>null);const text=flat(await this.eval(PANE).catch(()=>''));
    if(WARNING.test(text)){store.finish(event.event,'uncertain','Instagram mostró un aviso al enviar');throw Object.assign(Error('Instagram mostró un aviso al enviar. Se pausó la tanda: revisá la ventana de Nexo.'),{stopBatch:true});}
    if(now&&!flat(now.text)&&text.includes(probe)){store.finish(event.event,'sent','Enviado por Nexo');this.log(item,'sent','Enviado');await this.saveExcel().catch(()=>{});return true;}}
   // The text left the box but didn't show up: counts as contacted so it's never sent twice; the user checks it.
