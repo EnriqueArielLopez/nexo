@@ -1,0 +1,10 @@
+{
+ "manifest_version": 3,
+ "name": "Nexo · Envíos de Instagram",
+ "version": "1.0.0",
+ "description": "Permite que Nexo envíe tus tandas de Instagram desde este Chrome, con tu sesión, de a uno y con pausas.",
+ "permissions": ["debugger", "alarms", "storage"],
+ "host_permissions": ["http://127.0.0.1:18761/*"],
+ "background": {"service_worker": "background.js"},
+ "action": {"default_title": "Nexo · Envíos de Instagram"}
+}

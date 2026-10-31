@@ -71,3 +71,18 @@ test('envío automático: si falta iniciar sesión, espera a que entre y sigue s
   assert.equal(s.state.status,'done');assert.equal(s.state.sent,1);
  }finally{f.close();}
 });
+test('envío desde el Chrome de la usuaria: la extensión recibe los comandos por el puente y los ejecuta',async()=>{
+ const {ExtensionBridge,Extensions}=await import('./extension-bridge.mjs');
+ const f=fixture();try{
+  const ig=fakeInstagram({hotel_sol:{title:'Hotel Sol (@hotel_sol)',dates:['2025-01-01']}});const bridge=new ExtensionBridge({pollMs:50});let on=true;
+  // The extension: asks for commands and answers each one.
+  (async()=>{while(on){for(const c of await bridge.poll()){try{bridge.result({id:c.id,result:await ig.client.call(c.method,c.params)});}catch(e){bridge.result({id:c.id,error:e.message});}}}})();
+  await new Promise(r=>setTimeout(r,10));
+  const s=new InstagramSender(os.tmpdir(),{store:f.store,bridge,launch:()=>{throw Error('no debe abrir otra ventana');},pause:[0,0],wait:async()=>{}});
+  s.start([lead(f.store,'hotel_sol')]);await s.done;on=false;
+  assert.equal(s.state.status,'done');assert.equal(s.state.sent,1);assert.match(ig.chats.hotel_sol,/Soy Mica/);
+  const idle=new InstagramSender(os.tmpdir(),{store:f.store,bridge:new ExtensionBridge(),pause:[0,0],wait:async()=>{}});
+  idle.start([lead(f.store,'otro_hotel')]);await idle.done;assert.equal(idle.state.status,'error');assert.match(idle.state.message,/Chrome no está conectado/);
+  const dir=mkdtempSync(path.join(os.tmpdir(),'nexo-ext-'));try{const x=new Extensions(dir,path.resolve('chrome-extension'),18761);const folder=await x.install('u1');const again=new Extensions(dir,path.resolve('chrome-extension'),18761);await again.load();const token=(await again.token('u1'));assert.match(token,/^[a-f0-9]{48}$/);assert.ok(again.byToken(token));assert.equal(again.byToken('x'.repeat(48)),null);assert.ok(folder.endsWith('u1'));}finally{rmSync(dir,{recursive:true,force:true});}
+ }finally{f.close();}
+});

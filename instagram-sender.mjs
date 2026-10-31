@@ -1,4 +1,5 @@
-// Sends the Instagram batch from Nexo's own Chrome window (Edge if Chrome isn't installed), signed in to the user's account: one chat at a time,
+// Sends the Instagram batch from a window of the user's Chrome (through Nexo's extension) or from Nexo's own Chrome window,
+// signed in to the user's account: one chat at a time,
 // with a 20-40 s pause between sends. Before each send it reads the real profile (name and last posts) and skips
 // accounts that aren't lodgings, that post often, or that were already contacted. Debugging listens only on loopback.
 import fs from 'node:fs/promises';
@@ -34,8 +35,8 @@ export function postDate(code){let id=0n;for(const ch of String(code).slice(0,11
 const BOX=`document.querySelector('div[contenteditable="true"][role="textbox"]')`;
 
 export class InstagramSender {
- constructor(profileDir,{store,onChange,saveExcel=async()=>{},connect=DevtoolsConnection.connect,launch=spawn,edge=findBrowser,readFile=fs.readFile,pause=[20000,40000],wait=sleep,loginWait=300}={}){
-  Object.assign(this,{profileDir:path.resolve(profileDir),store,onChange,saveExcel,connect,launch,edge,readFile,pause,wait,loginWait});this.client=null;this.sessionId='';this.targetId='';
+ constructor(profileDir,{store,onChange,saveExcel=async()=>{},connect=DevtoolsConnection.connect,launch=spawn,edge=findBrowser,readFile=fs.readFile,pause=[20000,40000],wait=sleep,loginWait=300,bridge=null}={}){
+  Object.assign(this,{profileDir:path.resolve(profileDir),store,onChange,saveExcel,connect,launch,edge,readFile,pause,wait,loginWait,bridge});this.client=null;this.sessionId='';this.targetId='';
   this.state={status:'idle',total:0,sent:0,skipped:0,current:'',nextAt:0,message:'',items:[]};
  }
  publicState(){return {...this.state,items:this.state.items.map(i=>({...i}))};}
@@ -44,7 +45,9 @@ export class InstagramSender {
   const text=await this.readFile(path.join(this.profileDir,'DevToolsActivePort'),'utf8');const [line,browserPath]=text.trim().split(/\r?\n/);const port=Number(line);if(!Number.isInteger(port)||port<1024||port>65535||!/^\/devtools\/browser\/[a-z0-9-]+$/i.test(browserPath))throw Error('Puerto del navegador inválido.');return 'ws://127.0.0.1:'+port+browserPath;}
  async ensure(){
   if(this.client){try{await this.client.call('Target.getTargetInfo',{targetId:this.targetId});return;}catch{this.client.close();this.client=null;}}
-  try{this.client=await this.connect(await this.endpoint());}catch{}
+  // With Nexo's extension, the window is one of the user's own Chrome.
+  if(this.bridge){if(!this.bridge.connected())throw Error('Chrome no está conectado con Nexo. Abrí Chrome y, si es la primera vez, instalá la extensión desde «Conectar mi Chrome».');this.client=this.bridge;}
+  else try{this.client=await this.connect(await this.endpoint());}catch{}
   if(!this.client){
    await fs.mkdir(this.profileDir,{recursive:true});const executable=await this.edge();
    // A window of this profile left open without the connection would swallow the new one: close it first.
