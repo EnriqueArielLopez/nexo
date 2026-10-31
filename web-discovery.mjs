@@ -153,8 +153,10 @@ export function queryPlan(settings){
   const pairs=Array.from({length:maxZones},(_,zone)=>terms(settings.segment).map((term,index)=>({zone,term,index}))).flat();if(!cities.length)pairs.sort((a,b)=>a.index-b.index||a.zone-b.zone);
   for(const {zone,term} of pairs)for(const country of countries){const zones=countryZones(country);if(zone>=zones.length)continue;const city=zones[zone];const region=cities.find(c=>regionalZones[country.code]?.[normalize(c)]?.includes(city));const q=`site:instagram.com ${term} ${variant} ${city||country.name}${region&&normalize(city)!==normalize(region)?' '+region:''}${variant&&cities.length?' '+country.name:''}`.replace(/\s+/g,' ').trim();plan.push({q,country:country.name,city});}
  }
- const mixed=[];for(const p of plan){mixed.push(p);if(settings.businessTier==='premium'&&settings.segment.includes('Hotel'))mixed.push({...p,q:p.q.replace('site:instagram.com ','')+' Instagram'});}return mixed.slice(0,420);
+ const mixed=[];for(const p of plan){mixed.push(p);if(settings.businessTier==='premium'&&settings.segment.includes('Hotel'))mixed.push({...p,q:p.q.replace('site:instagram.com ','')+' Instagram'});}return mixed.slice(0,6000);
 }
+// Each search runs this many queries and the next one continues where it stopped, so it doesn't repeat the same ones.
+export const QUERIES_PER_SEARCH=420;
 export class PublicWebDiscovery {
  constructor({read=fetchPublic,delayMs=5000,signal}={}){this.read=read;this.delayMs=delayMs;this.signal=signal;this.calls=0;this.lastSearch=0;this.websiteCache=new Map();}
  async search(q){
@@ -180,7 +182,7 @@ export async function discoverWeb({store,seed,web=new PublicWebDiscovery(),inspe
  const emit=()=>progress({...state});emit();
  try{
   const profile=await web.profile(seed,settings);state.profile=profile;emit();
-  const full=queryPlan(settings),saved=store.job('searchCursor'),start=saved?.size===full.length&&saved.next<full.length?saved.next:0;const plan=[...full.slice(start),...full.slice(0,start)];state.totalQueries=plan.length;let consecutive=0;
+  const full=queryPlan(settings),saved=store.job('searchCursor'),start=saved?.size===full.length&&saved.next<full.length?saved.next:0;const plan=[...full.slice(start),...full.slice(0,start)].slice(0,QUERIES_PER_SEARCH);state.totalQueries=plan.length;let consecutive=0;
   // Nexo is for accounts that barely post: read the dates of their last posts on the profile itself (or, if it can't be
   // read, estimate them from the index) and drop the ones that post regularly, that don't exist or that aren't lodgings.
   const drop=(id,why)=>{store.db.prepare('UPDATE leads SET archived=1,approved=0 WHERE id=?').run(id);state.found--;state.review--;state.ids=state.ids.filter(x=>x!==id);state.rejected[why]=(state.rejected[why]||0)+1;};
