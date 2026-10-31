@@ -65,3 +65,9 @@ test('la búsqueda revisa cada perfil en Instagram: descarta las que publican se
  const all=f.store.list({includeArchived:true}),quiet=JSON.parse(all.find(l=>l.handle==='quieto_qa').activity);assert.equal(quiet.verdict,'inactive');assert.equal(quiet.source,'profile');
  assert.ok(!f.store.list().some(l=>['activo_qa','borrado_qa'].includes(l.handle)));
 }finally{f.close();}});
+test('alta categoría: lo que aparece al buscar hoteles de lujo o 3-5 estrellas entra aunque su descripción no lo diga, salvo 1 o 2 estrellas',()=>{
+ const q={q:'site:instagram.com hotel lujo Madrid',country:'España',city:'Madrid'},plain='Hotel boutique en Madrid, España. Reservas por WhatsApp';
+ const lead=webCandidate({...candidate('sin_estrellas',plain),query:q},settings,{services:'contenido'});assert.ok(lead);assert.match(lead.qualification.categorySignals[0].label,/confirmala/);
+ assert.equal(webCandidate(candidate('sin_estrellas',plain),settings,{services:'contenido'}),null,'sin una búsqueda de alta categoría no alcanza');
+ assert.equal(webCandidate({...candidate('dos_estrellas','Hotel 2 estrellas en Madrid, España'),query:q},settings,{services:'contenido'}),null);
+});

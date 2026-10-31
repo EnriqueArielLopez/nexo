@@ -116,6 +116,11 @@ const MONTHS={january:0,february:1,march:2,april:3,may:4,june:5,july:6,august:7,
 export function postDates(results,h,now=new Date()){const name=escaped(normalize(h)),out=new Set();for(const r of results||[]){const t=normalize(r.title+' '+r.snippet);for(const m of t.matchAll(new RegExp(name+' on ([a-z]+) (\\d{1,2}), (\\d{4})','g')))if(m[1]in MONTHS)out.add(new Date(Date.UTC(+m[3],MONTHS[m[1]],+m[2])).toISOString().slice(0,10));for(const m of t.matchAll(new RegExp(name+' el (\\d{1,2}) de ([a-z]+) de (\\d{4})','g')))if(m[2]in MONTHS)out.add(new Date(Date.UTC(+m[3],MONTHS[m[2]],+m[1])).toISOString().slice(0,10));for(const m of t.matchAll(new RegExp(name+' (\\d{1,3}) ?(h|d|w|sem)(?:$|[^a-z])','g'))){const n=+m[1],ago=m[2]==='h'?0:m[2]==='d'?n:n*7;out.add(new Date(now-ago*864e5).toISOString().slice(0,10));}}return [...out].filter(d=>new Date(d)<=now).sort().reverse();}
 // Signals that an Instagram account is gone or inactive in the public index.
 export function inactiveAccount(result){const t=normalize([result.title,result.snippet].join(' '));if(/page not found|pagina no encontrada|no esta disponible|isn.t available|cuenta (eliminada|desactivada)|cerrado definitivamente|permanently closed|cerramos (nuestras puertas|definitivamente)|ya no (estamos|atendemos)/.test(t))return 'cerrada o inexistente';const m=t.match(/([\d.,]+)\s*(k|mil|m)?\s*(posts|publicaciones)\b/);if(m&&Number(m[1].replace(/[.,]/g,''))===0)return 'sin publicaciones';return '';}
+// The snippet of an account rarely says its category: a result of a search for luxury or 3-5 star hotels counts as high
+// category unless it says it has 1 or 2 stars (the activity check and the user's review come after).
+const LOW_STARS=/(?:^|[^a-z0-9])(?:1|2|una|dos)\s*(?:[-–]\s*)?(?:estrellas|stars?)(?:$|[^a-z])/;
+const PREMIUM_QUERY=/(?:^|\s)(?:lujo|luxury|[345] estrellas|boutique spa)(?:\s|$)/;
+export function premiumMatch(result,source=''){const text=result.title+' '+result.snippet,signals=premiumSignals(text,source);if(signals.length)return signals;if(LOW_STARS.test(normalize(text)))return [];return PREMIUM_QUERY.test(result.query?.q||'')?[{label:'Encontrado buscando alta categoría (confirmala)',excerpt:result.query.q,source:''}]:[];}
 export function webCandidate(result,settings,profile,known=[]){
  const h=instagramHandle(result.url);if(!h||!isNewProspect(h,settings.lastSeed,known))return null;
  const text=[result.title,result.snippet].join(' ');const biography=result.snippet.replace(/^.*?on\s+Instagram\s*:\s*/i,'');
@@ -127,7 +132,7 @@ export function webCandidate(result,settings,profile,known=[]){
  const description=result.snippet.slice(0,1000);const source=result.evidenceUrl||result.url;
  const commercial=/reserv[aá]|booking|compr[aá]|pedidos|turnos|citas|tienda|ventas|whatsapp|contact[aá]|men[uú]|cat[aá]logo/i.test(description);
  const fit=`Rubro ${settings.segment} y ubicación coinciden con los filtros. Oferta del proveedor: ${profile.services}. Encaje específico pendiente de revisión.`;
- const category=premiumSignals(text,source);if(settings.businessTier==='premium'&&!category.length)return null;
+ const category=premiumMatch(result,source);if(settings.businessTier==='premium'&&!category.length)return null;
  const indexedMatch=description.match(/([\d.,]+)\s+(?:posts|publicaciones)\b/i),indexedPosts=indexedMatch?Number(indexedMatch[1].replace(/[.,]/g,'')):null;const sparseHint=indexedPosts!==null&&indexedPosts<=12;
  const followers=(()=>{const m=normalize(description).match(/([\d.,]+)\s*(k|mil|m)?\s*(followers|seguidores)/);if(!m)return null;const n=Number(m[1].replace(/[.,]/g,''));return m[2]==='m'?n*1e6:m[2]?n*1000:n;})();const active=indexedPosts!==null&&indexedPosts>0&&(followers===null||followers>=50);
  const score=Math.min(90,40+(sparseHint?10:0)+(geo.city?10:0)+(commercial?10:0)+(active?5:0)-(geo.fromQuery?5:0)-(followers!==null&&followers>=20000?10:0)+Math.min(25,category.length*10));
@@ -142,7 +147,7 @@ export function rejectionReason(result,settings,known=[]){
  const text=result.title+' '+result.snippet;if(isDirectory(text))return 'directory';if(hotelChain(result))return 'chain';if(notBusiness(result))return 'creator';if(/hotel|resort|posada|hostal|apart/i.test(settings.segment)&&(otherTrade(result)||!lodging(result)))return 'sector';
  if(inactiveAccount(result))return 'inactive';if(!matchGeography(result.snippet.replace(/^.*?on\s+Instagram\s*:\s*/i,''),settings)&&!queryGeography(result,settings))return 'location';
  if(!terms(settings.segment).some(t=>contains(text,t)))return 'sector';
- if(settings.businessTier==='premium'&&!premiumSignals(text,result.url).length)return 'category';return 'other';
+ if(settings.businessTier==='premium'&&!premiumMatch(result,result.url).length)return 'category';return 'other';
 }
 export function queryPlan(settings){
  const countries=COUNTRIES.filter(c=>settings.countries.includes(c.code));const cities=String(settings.cities||'').split(/[,;\n]+/).map(x=>x.trim()).filter(Boolean);const plan=[];
@@ -156,7 +161,7 @@ export function queryPlan(settings){
  const mixed=[];for(const p of plan){mixed.push(p);if(settings.businessTier==='premium'&&settings.segment.includes('Hotel'))mixed.push({...p,q:p.q.replace('site:instagram.com ','')+' Instagram'});}return mixed.slice(0,6000);
 }
 // Each search runs this many queries and the next one continues where it stopped, so it doesn't repeat the same ones.
-export const QUERIES_PER_SEARCH=420;
+export const QUERIES_PER_SEARCH=900;
 export class PublicWebDiscovery {
  constructor({read=fetchPublic,delayMs=5000,signal}={}){this.read=read;this.delayMs=delayMs;this.signal=signal;this.calls=0;this.lastSearch=0;this.websiteCache=new Map();}
  async search(q){
