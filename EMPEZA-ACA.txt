@@ -15,7 +15,7 @@ Claude es opcional: Conectar-con-Claude.cmd lo vincula si tenés la app.
 
 TANDAS DE INSTAGRAM: en el paso 2 elegí "Tanda de hoy" (5 a 100, por defecto 25)
 y tocá "Marcar los próximos". El máximo es 100 por día (lo cambiás en Ajustes).
-Revisá los mensajes y tocá "Enviar esta tanda". Se abre una ventana de Edge de
+Revisá los mensajes y tocá "Enviar esta tanda". Se abre una ventana de Chrome de
 Nexo; la primera vez iniciás sesión en Instagram ahí y la tanda arranca sola.
 Nexo revisa cada perfil (saltea los que no son alojamientos o publican seguido),
 pega el mensaje, lo envía, confirma que salió, lo registra y espera entre 20 y 40

@@ -1,17 +1,20 @@
-// Sends the Instagram batch from Nexo's own Edge window, signed in to the user's account: one chat at a time,
+// Sends the Instagram batch from Nexo's own Chrome window (Edge if Chrome isn't installed), signed in to the user's account: one chat at a time,
 // with a 20-40 s pause between sends. Before each send it reads the real profile (name and last posts) and skips
 // accounts that aren't lodgings, that post often, or that were already contacted. Debugging listens only on loopback.
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import {spawn} from 'node:child_process';
+import {spawn,spawnSync} from 'node:child_process';
+import net from 'node:net';
 import {DevtoolsConnection} from './browser-search.mjs';
 import {otherTrade} from './web-discovery.mjs';
 
-async function findEdge(){
- const roots=[process.env['ProgramFiles(x86)'],process.env.ProgramFiles,process.env.LOCALAPPDATA].filter(Boolean);
- for(const root of roots){const executable=path.join(root,'Microsoft','Edge','Application','msedge.exe');try{await fs.access(executable);return executable;}catch{}}
- throw Error('No se encontró Microsoft Edge. Instalalo desde Microsoft para enviar desde Nexo.');
+// Chrome doesn't let other programs control the user's main window, so Nexo uses its own Chrome profile.
+async function findBrowser(){
+ const roots=[process.env.ProgramFiles,process.env['ProgramFiles(x86)'],process.env.LOCALAPPDATA].filter(Boolean);
+ for(const app of [['Google','Chrome','Application','chrome.exe'],['Microsoft','Edge','Application','msedge.exe']])for(const root of roots){const executable=path.join(root,...app);try{await fs.access(executable);return executable;}catch{}}
+ throw Error('No se encontró Google Chrome. Instalalo para enviar desde Nexo.');
 }
+const freePort=()=>new Promise((resolve,reject)=>{const server=net.createServer();server.once('error',reject);server.listen(0,'127.0.0.1',()=>{const {port}=server.address();server.close(()=>resolve(port));});});
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const flat=s=>String(s||'').replace(/\s+/g,' ').trim();
 export const WARNING=/intentalo m[aá]s tarde|int[eé]ntalo de nuevo m[aá]s tarde|try again later|restringimos|we restrict|limitamos (?:la frecuencia|cu[aá]ntas)|action blocked|acci[oó]n bloqueada|tu cuenta (?:fue|ha sido) (?:suspendida|restringida)|confirm(?:a|á) que (?:eres|sos) (?:una persona|vos)|challenge_required/i;
@@ -31,21 +34,26 @@ export function postDate(code){let id=0n;for(const ch of String(code).slice(0,11
 const BOX=`document.querySelector('div[contenteditable="true"][role="textbox"]')`;
 
 export class InstagramSender {
- constructor(profileDir,{store,onChange,saveExcel=async()=>{},connect=DevtoolsConnection.connect,launch=spawn,edge=findEdge,readFile=fs.readFile,pause=[20000,40000],wait=sleep,loginWait=300}={}){
+ constructor(profileDir,{store,onChange,saveExcel=async()=>{},connect=DevtoolsConnection.connect,launch=spawn,edge=findBrowser,readFile=fs.readFile,pause=[20000,40000],wait=sleep,loginWait=300}={}){
   Object.assign(this,{profileDir:path.resolve(profileDir),store,onChange,saveExcel,connect,launch,edge,readFile,pause,wait,loginWait});this.client=null;this.sessionId='';this.targetId='';
   this.state={status:'idle',total:0,sent:0,skipped:0,current:'',nextAt:0,message:'',items:[]};
  }
  publicState(){return {...this.state,items:this.state.items.map(i=>({...i}))};}
- async endpoint(){const text=await this.readFile(path.join(this.profileDir,'DevToolsActivePort'),'utf8');const [line,browserPath]=text.trim().split(/\r?\n/);const port=Number(line);if(!Number.isInteger(port)||port<1024||port>65535||!/^\/devtools\/browser\/[a-z0-9-]+$/i.test(browserPath))throw Error('Puerto del navegador inválido.');return 'ws://127.0.0.1:'+port+browserPath;}
+ // Chrome 156 doesn't report a port it picks itself, so Nexo picks a free one and keeps it next to the profile.
+ async endpoint(){const saved=Number(String(await this.readFile(path.join(this.profileDir,'nexo-port'),'utf8').catch(()=>'')).trim());if(Number.isInteger(saved)&&saved>=1024&&saved<=65535){const r=await fetch(`http://127.0.0.1:${saved}/json/version`,{signal:AbortSignal.timeout(2000)}).then(r=>r.json()).catch(()=>null);const ws=r?.webSocketDebuggerUrl;if(typeof ws==='string'&&new URL(ws).hostname==='127.0.0.1'&&/^\/devtools\/browser\/[a-z0-9-]+$/i.test(new URL(ws).pathname))return ws;}
+  const text=await this.readFile(path.join(this.profileDir,'DevToolsActivePort'),'utf8');const [line,browserPath]=text.trim().split(/\r?\n/);const port=Number(line);if(!Number.isInteger(port)||port<1024||port>65535||!/^\/devtools\/browser\/[a-z0-9-]+$/i.test(browserPath))throw Error('Puerto del navegador inválido.');return 'ws://127.0.0.1:'+port+browserPath;}
  async ensure(){
   if(this.client){try{await this.client.call('Target.getTargetInfo',{targetId:this.targetId});return;}catch{this.client.close();this.client=null;}}
   try{this.client=await this.connect(await this.endpoint());}catch{}
   if(!this.client){
    await fs.mkdir(this.profileDir,{recursive:true});const executable=await this.edge();
+   // A window of this profile left open without the connection would swallow the new one: close it first.
+   if(this.launch===spawn&&process.platform==='win32')spawnSync('powershell.exe',['-NoProfile','-Command',`Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like '*--user-data-dir=${this.profileDir.replace(/'/g,"''")}*' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }`],{windowsHide:true,timeout:15000});
+   const port=await freePort();await fs.writeFile(path.join(this.profileDir,'nexo-port'),String(port));
    // A profile only for Nexo's sends: the user signs in to Instagram there once.
-   const child=this.launch(executable,['--remote-debugging-address=127.0.0.1','--remote-debugging-port=0','--user-data-dir='+this.profileDir,'--no-first-run','--no-default-browser-check','--new-window','--window-size=1100,850','about:blank'],{stdio:'ignore',windowsHide:false});
+   const child=this.launch(executable,['--remote-debugging-address=127.0.0.1','--remote-debugging-port='+port,'--user-data-dir='+this.profileDir,'--no-first-run','--no-default-browser-check','--new-window','--window-size=1100,850','about:blank'],{stdio:'ignore',windowsHide:false,detached:true});
    let launchError=null;child.once('error',e=>{launchError=e;});child.unref();
-   for(let i=0;i<40&&!this.client;i++){if(launchError)throw Error('No se pudo abrir Microsoft Edge.');await sleep(250);try{this.client=await this.connect(await this.endpoint());}catch{}}
+   for(let i=0;i<120&&!this.client;i++){if(launchError)throw Error('No se pudo abrir Chrome.');await sleep(250);try{this.client=await this.connect(await this.endpoint());}catch{}}
    if(!this.client)throw Error('No se pudo abrir la ventana de envíos de Nexo. Cerrala y volvé a intentar.');
   }
   const targets=await this.client.call('Target.getTargets');
