@@ -71,3 +71,9 @@ test('alta categoría: lo que aparece al buscar hoteles de lujo o 3-5 estrellas 
  assert.equal(webCandidate(candidate('sin_estrellas',plain),settings,{services:'contenido'}),null,'sin una búsqueda de alta categoría no alcanza');
  assert.equal(webCandidate({...candidate('dos_estrellas','Hotel 2 estrellas en Madrid, España'),query:q},settings,{services:'contenido'}),null);
 });
+test('la búsqueda sigue buscando mientras revisa perfiles y los que publican poco quedan listos para contactar',async()=>{const f=fixture();try{f.store.saveSettings({maxResults:4});const d=n=>new Date(Date.now()-n*864e5).toISOString().slice(0,10);let q=0,searchesWhileChecking=0,checking=0;
+ const web={calls:0,profile:async()=>({services:'contenido'}),search:async()=>{if(checking)searchesWhileChecking++;q++;return [candidate(q===1?'activo_qa':'quieto_qa_'+q)];}};
+ const result=await discoverWeb({store:f.store,seed:settings.lastSeed,web,rest:async()=>{},inspect:async h=>{checking++;await new Promise(r=>setTimeout(r,30));checking--;return h==='activo_qa'?{title:'Hotel Activo',dates:[2,9,16,23,30,37,44].map(d)}:{title:'Hotel '+h,dates:[60,200].map(d)};}});
+ assert.equal(result.found,4);assert.equal(result.rejected.active,1);assert.ok(searchesWhileChecking>0,'busca y revisa al mismo tiempo');
+ const quiet=f.store.list();assert.equal(quiet.length,4);for(const l of quiet){assert.equal(JSON.parse(l.qualification).status,'ready');assert.equal(f.store.gate({...l,approved:1}),'');}
+}finally{f.close();}});

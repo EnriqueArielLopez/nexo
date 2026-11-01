@@ -543,3 +543,16 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .chrome-state.on{color:var(--green,#2f8f5b);margin:0}
 .chrome-setup ol{margin:6px 0 8px 18px;padding:0}
 .chrome-setup code{word-break:break-all;font-size:12px}
+
+.setup-card{margin:0 0 22px;padding:20px 22px;border-radius:20px;background:linear-gradient(135deg,rgba(255,255,255,.92),rgba(255,244,236,.92));border:1.5px solid #e9b99c;box-shadow:0 12px 30px rgba(196,104,64,.12)}
+.setup-badge{display:inline-block;padding:3px 10px;border-radius:999px;background:#c8673f;color:#fff;font-size:12px;font-weight:700;letter-spacing:.02em}
+.setup-head h3{margin:10px 0 4px;font-size:20px}
+.setup-head p{margin:0;color:var(--muted)}
+.setup-steps{margin:14px 0 10px 20px;padding:0;display:grid;gap:8px}
+.setup-steps li{line-height:1.5}
+.setup-install{display:inline-block;width:auto;min-height:0;margin:2px 6px;padding:7px 14px;font-size:13px}
+.setup-steps code{word-break:break-all;font-size:12px;background:rgba(0,0,0,.05);padding:2px 6px;border-radius:6px}
+.setup-state{margin:6px 0 0;font-size:13px;color:var(--muted)}
+.setup-state::before{content:'';display:inline-block;width:8px;height:8px;margin-right:8px;border-radius:50%;background:#e0a23a;animation:setupPulse 1.4s ease-in-out infinite}
+@keyframes setupPulse{50%{opacity:.3}}
+@media (max-width:640px){.setup-card{padding:16px}}

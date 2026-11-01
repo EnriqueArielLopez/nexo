@@ -24,7 +24,7 @@ import {exportWorkbook} from './export-portable.mjs';
 import {NexoAssistant,campaignContext,connectionRequest} from './assistant.mjs';
 import {emailLead,sendMail,attachmentDir,ATTACHMENT_TYPES} from './mailer.mjs';
 import {runSchedules} from './scheduler.mjs';
-const BUILD='3.7.3';
+const BUILD='3.8.0';
 const root=path.dirname(fileURLToPath(import.meta.url));
 const data=path.resolve(process.env.HOTEL_DATA_DIR||path.join(root,'data'));
 const port=Number(process.env.PORT||18761),origin=`http://127.0.0.1:${port}`;
@@ -93,7 +93,7 @@ try{const route=new URL(req.url,origin).pathname;
   case '/api/ig/login':return json(res,{logged:await c.sender.openLogin(),state:state(c)});
   case '/api/ig/send':{const batch=prepareBatch(c.store,v.ids,'instagram');if(!batch.items.length)throw Error(batch.skipped[0]?.reason||'No hay clientes habilitados para enviar hoy.');approveBatch(c.store,batch);c.sender.start(batch.items);return json(res,{...batch,state:state(c)});}
   case '/api/ig/stop':c.sender.stop();break;
-  case '/api/ext/install':{const folder=await extensions.install(c.user.id);spawn('explorer.exe',[folder],{detached:true,stdio:'ignore'}).on('error',()=>{}).unref();const chrome=await chromePath();if(chrome)spawn(chrome,['chrome://extensions/'],{detached:true,stdio:'ignore'}).on('error',()=>{}).unref();return json(res,{folder,state:state(c)});}
+  case '/api/ext/install':{const folder=await extensions.install(c.user.id);spawn('explorer.exe',[folder],{detached:true,stdio:'ignore'}).on('error',()=>{}).unref();const chrome=await chromePath();if(chrome)spawn(chrome,['chrome://extensions/'],{detached:true,stdio:'ignore'}).on('error',()=>{}).unref();return json(res,{folder,chrome:!!chrome,state:state(c)});}
   case '/api/batch/manual':{if(v.reviewed!==true)throw Error('Revisá los perfiles, su oportunidad y los textos.');const batch=prepareBatch(c.store,v.ids,'instagram');if(v.token!==batch.token)throw Error('La tanda cambió. Abrí la vista previa nuevamente.');approveBatch(c.store,batch);return json(res,{...batch,state:state(c)});}
   case '/api/claude':{const key=String(v.key||'').trim();if(!key)throw Error('Ingresá la clave de API de Claude.');try{await new Claude(key,c.store.settings().model).call(connectionRequest(campaignContext({store:c.store,instagram:c.ig?.account,search:c.search,queue:c.queue.state}))); }catch(e){throw Error(e.status===401?'La clave no es válida. Copiá una nueva desde tu cuenta de Anthropic.':e.status===429?'Anthropic no habilitó la conexión. Revisá saldo y límite de uso.':'No se pudo conectar. Revisá Internet, saldo y permisos de tu cuenta de Anthropic.');}c.key=key;c.secret.key=key;await saveConnection(c,v.remember===true);break;}
   case '/api/instagram/oauth/start':{if(!c.active)throw Error('Iniciá sesión de nuevo.');const username=handle(v.username);const result=await c.officialInstagram.start(username);c.queue.pause();c.store.saveSettings({instagramSender:username});return json(res,{...result,state:state(c)});}
