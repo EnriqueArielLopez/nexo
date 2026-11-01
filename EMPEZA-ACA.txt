@@ -1,85 +1,53 @@
-NEXO · CLIENTES
+NEXO · CLIENTES 3.8
 
-CÓMO EMPEZAR (2 MINUTOS)
-1. Extraé TODO el ZIP en una carpeta (clic derecho > Extraer todo).
-   No abras Nexo.exe desde adentro del ZIP.
+Nexo busca negocios (por ejemplo hoteles) que publican poco en Instagram y les
+envía tu propuesta desde tu propio Chrome, de a uno y con pausas.
+
+REQUISITOS
+- Windows 10 u 11 de 64 bits.
+- Google Chrome instalado (google.com/chrome), con tu sesión de Instagram.
+- Microsoft Edge (viene con Windows): Nexo lo usa minimizado para buscar.
+- Conexión a Internet. No hace falta ninguna clave ni Claude.
+
+INSTALAR (5 MINUTOS, UNA SOLA VEZ)
+1. Extraé TODO el ZIP en una carpeta fija, por ejemplo Documentos\Nexo
+   (clic derecho > Extraer todo). No abras Nexo.exe desde adentro del ZIP
+   y no muevas la carpeta después.
 2. Abrí Nexo.exe. Si Windows muestra "Windows protegió su PC", tocá
    "Más información" > "Ejecutar de todos modos" (el programa no está firmado).
 3. Creá tu cuenta local (usuario y contraseña de 10 caracteres o más).
-4. Tocá "▶ Cómo se usa" arriba a la derecha: es una guía animada de 8 pasos.
-5. "✈ Probar envío" te deja mandarte un mensaje de prueba por Instagram.
+   Tus datos quedan solo en esta computadora.
+4. Arriba aparece "Conectá Nexo con tu Google Chrome". Seguí los pasos:
+   a. Abrí instagram.com en Chrome e iniciá sesión con la cuenta que va a escribir.
+   b. En Nexo tocá "Conectar mi Chrome": se abren la página de extensiones de
+      Chrome y la carpeta de la extensión.
+   c. En Chrome activá "Modo de desarrollador" (arriba a la derecha).
+   d. Tocá "Cargar descomprimida" y elegí la carpeta que se abrió.
+   Cuando Nexo la detecta, el cartel desaparece solo.
 
-REQUISITOS: Windows 10 u 11 de 64 bits, Microsoft Edge (viene con Windows)
-y conexión a Internet. Instagram se usa desde tu propio navegador.
-Claude es opcional: Conectar-con-Claude.cmd lo vincula si tenés la app.
+USARLO
+Paso 1 · Buscar: pegá tu Instagram, elegí países, categoría y rubro, y tocá
+  "Buscar hasta 100". Nexo busca en la web y revisa el perfil de cada cuenta:
+  descarta las que publican seguido y deja las que publican poco o de forma
+  irregular. Podés ir viendo los resultados mientras busca.
+Paso 2 · Elegir: la pestaña "Última búsqueda" muestra lo nuevo. "Listos para
+  contactar" son los ya verificados. Elegí "Tanda de hoy" y tocá "Marcar los
+  próximos".
+Paso 3 · Enviar: revisá el mensaje y tocá "Enviar esta tanda". Nexo abre una
+  ventana de tu Chrome, pega el mensaje, lo envía, confirma que salió, lo
+  registra y espera entre 20 y 40 segundos antes del siguiente. Si Instagram
+  muestra un aviso, la tanda se pausa sola. Mientras envía, no les escribas a
+  mano a esas cuentas.
 
-TANDAS DE INSTAGRAM: en el paso 2 elegí "Tanda de hoy" (5 a 100, por defecto 25)
-y tocá "Marcar los próximos". El máximo es 100 por día (lo cambiás en Ajustes).
-Revisá los mensajes y tocá "Enviar esta tanda". Se abre una ventana de Chrome de
-Nexo; la primera vez iniciás sesión en Instagram ahí y la tanda arranca sola.
-Nexo revisa cada perfil (saltea los que no son alojamientos o publican seguido),
-pega el mensaje, lo envía, confirma que salió, lo registra y espera entre 20 y 40
-segundos antes del próximo. Si Instagram muestra un aviso, la tanda se pausa sola.
-Mientras envía, no le escribas a mano a esas cuentas.
+A nadie se le escribe dos veces. El máximo es 100 mensajes por día.
+Chrome muestra la barra "Nexo - Envíos de Instagram comenzó a depurar este
+navegador" mientras trabaja: es normal.
 
-NEXO · CLIENTES 3.7.2
+SI ALGO NO ANDA
+- "Chrome no está conectado": abrí Chrome y fijate en chrome://extensions que
+  la extensión de Nexo esté activada.
+- El buscador pide una verificación humana: completala vos en la ventana de Edge
+  y tocá "Ya completé la verificación · continuar".
 
-BUSCAR SIN API Y CONTINUAR SI EL BUSCADOR PIDE VERIFICACIÓN
-1. Entrá a Nexo. Pegá tu Instagram y elegí países y rubro en Filtros.
-2. Pulsá Buscar 100 clientes. Edge trabaja minimizado con un perfil propio.
-3. Si el buscador pide una verificación humana, completala vos en esa ventana.
-4. Volvé a Nexo y pulsá Ya completé la verificación · continuar.
-   Nexo lee la misma página para continuar sin perder la validación.
-   Ver buscador trae esa pestaña al frente. Detener cancela la investigación.
-
-No requiere claves API ni Claude. Requiere Edge instalado.
-La ventana usa un perfil propio de Nexo: no inicies sesiones personales allí.
-Si cambiás a otra web, Nexo no leerá su contenido. Para retomar, iniciá otra búsqueda.
-
-La verificación humana no se resuelve automáticamente. Si el buscador mantiene
-el bloqueo, Nexo queda en espera y no puede garantizar completar 100 resultados.
-100 es el máximo. No se completan faltantes con contactos inventados.
-
-Los candidatos aparecen en Todos y Por verificar, con su fuente. La afinidad
-usa coincidencias de rubro, ubicación y señales públicas. Revisá actividad,
-idioma, feed y oportunidad antes de contactar. La búsqueda no envía mensajes.
-Si no se identifica tu oferta, completá Qué ofrecés en Filtros.
-
-Datos: %LOCALAPPDATA%\NexoClientes\Datos. Se conservan cuentas y contactos.
-Para compartir usá Nexo-para-compartir-3.7.2.zip, no la carpeta Datos.
-
-CATEGORÍA, LIMPIEZA Y CONTACTO
-- Filtros permite alta categoría (hoteles de 3 estrellas en adelante y señales
-  equivalentes de categoría) o todas. La capacidad de pago es una estimación;
-  el feed necesita revisión. Se consultan ciudades, páginas siguientes y webs
-  que publican datos del hotel y enlazan su cuenta. No se adivinan cuentas.
-- Limpiar resultados archiva candidatos web sin envíos. Restaurar los recupera.
-  Historial, bajas y programados se conservan.
-- Mensaje base permite escribir una vez y personalizar con {cliente}, {hotel},
-  {cuenta}, {ciudad}, {remitente} y {servicio}.
-- Seleccioná todos: la tanda toma primero los de mayor afinidad hasta el cupo
-  disponible (por defecto 5 Instagram y 20 emails por día). Revisá la vista previa.
-- Sin conexión oficial, Instagram prepara cada texto para copiar y abrir el
-  perfil. Enviá desde tu cuenta y luego pulsá Ya envié. Abrir no marca enviado.
-- Email requiere configurar tu casilla en Ajustes. Podés adjuntar tu propuesta.
-  Solo se envía a direcciones disponibles, con confirmación de la tanda.
-- Excel contiene todos los resultados activos, no solo la tanda. Nexo actualiza
-  Clientes.xlsx después de registrar un envío. Descargalo nuevamente para
-  actualizar una copia descargada antes. Los enviados no vuelven como nuevos: nunca se les escribe dos veces.
-
-INSTAGRAM OFICIAL: PREPARADO, PENDIENTE DE ACTIVAR
-En Ajustes > Conectar Instagram podés indicar mila.content como remitente.
-No hace falta iniciar sesión ahora. Antes del primer uso hay que registrar
-la aplicación de Nexo en Meta y configurar su servicio HTTPS. No alcanza solo
-con iniciar sesión. La pantalla informa si falta esa preparación inicial.
-
-Una vez activado, Conectar Instagram abre la autorización oficial y guarda
-el permiso cifrado en esta PC. Probar un mensaje permite revisar destinatario
-y texto antes de confirmar un único envío. Para probar como cliente, usá otra
-cuenta que primero escriba a mila.content. La API no habilita mensajes iniciales
-a todos los perfiles encontrados. Los cupos son internos, no garantizan que
-Instagram no aplique restricciones.
-
-El servicio y la guía para el responsable del programa están en
-servicio-instagram/ACTIVAR-INSTAGRAM.md. No compartas claves de Meta en el ZIP.
-No se inició sesión ni se enviaron mensajes reales durante esta preparación.
+Datos: %LOCALAPPDATA%\NexoClientes\Datos. Para compartir Nexo, pasá el ZIP,
+nunca la carpeta Datos (tiene tus contactos).

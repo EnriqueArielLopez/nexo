@@ -1,4 +1,48 @@
-# Nexo · Clientes 3.7.2
+# Nexo · Clientes 3.8
+
+Nexo busca negocios (por ejemplo hoteles) que publican poco en Instagram y les envía
+tu propuesta desde tu propio Google Chrome, de a uno y con pausas de 20 a 40 segundos.
+Cada persona lo usa en su computadora, con su cuenta local y su Instagram: los datos
+no salen de esa PC.
+
+## Cómo instalarlo (Windows)
+
+1. Entrá a la sección **Releases** de este repositorio (columna derecha) y abrí la
+   última versión.
+2. En **Assets** descargá **`Nexo-Windows-portable.zip`**.
+3. Clic derecho sobre el ZIP > **Extraer todo**, en una carpeta fija (por ejemplo
+   `Documentos\Nexo`). No lo abras desde adentro del ZIP.
+4. Abrí **`Nexo.exe`**. Si Windows dice "Windows protegió su PC": **Más información >
+   Ejecutar de todos modos** (el programa no está firmado).
+5. Creá tu cuenta local (usuario y contraseña de 10 caracteres o más).
+6. Arriba aparece **"Conectá Nexo con tu Google Chrome"**. Seguí sus 4 pasos (una sola vez):
+   iniciá sesión en Instagram en Chrome, tocá **Conectar mi Chrome**, activá
+   **Modo de desarrollador** en `chrome://extensions` y tocá **Cargar descomprimida**
+   eligiendo la carpeta que abre Nexo.
+7. Listo: **1 Buscar** → **2 Elegir** → **3 Enviar**. El archivo `EMPEZA-ACA.txt` del ZIP
+   explica cada paso.
+
+**Requisitos:** Windows 10/11 de 64 bits, Google Chrome, Microsoft Edge (viene con
+Windows; Nexo lo usa minimizado para buscar) e Internet. No hace falta instalar Node,
+ni claves de API, ni Claude.
+
+## Para desarrollar
+
+El código está en la raíz (`server.mjs` es el servidor local en `127.0.0.1:18761`,
+`public/` la interfaz, `chrome-extension/` la extensión). Con Node 22:
+
+```
+node --test test.mjs search.test.mjs web-discovery.test.mjs prospecting.test.mjs browser-search.test.mjs instagram-official.test.mjs instagram-sender.test.mjs
+```
+
+Para armar el paquete que se comparte: `powershell -File build-portable.ps1 -OutputDirectory release-vXYZ\Nexo`
+(genera la carpeta y `Nexo-Windows-portable.zip`) y subilo como Release:
+`gh release create vX.Y.Z release-vXYZ\Nexo-Windows-portable.zip`.
+
+---
+
+## Historial de versiones
+
 
 
 ## Estado vigente 3.7 — 21/10/2026, Local
