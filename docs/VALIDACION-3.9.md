@@ -78,10 +78,42 @@ por cantidad sigue abarcando todos los resultados.
   el codigo y los assets de la app coinciden con main. SHA-256 del ZIP:
   `8605afca07628e2d80ef5d64f8320aea50c082f517c2b3881d5f016303f63cfc`.
 - Descarga pública y checksum verificados después de publicar. Se conserva la
-  release 3.8 para rollback. No se actualizó la instalación personal de esta PC.
+  release 3.8 para rollback. La instalación personal se actualizó después, según
+  el registro siguiente.
 - Ramas locales/remotas `codex/nexo-rendimiento-y-envios` y
   `codex/nexo-seleccion-paginada` eliminadas después de merge y validación de main.
 - Servidor y pestañas QA cerrados; datos y evidencias aislados fuera de Git.
   Docs actualizadas: README, EMPEZA-ACA, arquitectura y este registro. La
   documentación de infraestructura compartida no cambia porque Nexo sigue
   fuera de ese catálogo y no se tocaron sus ambientes, rutas ni servicios.
+
+
+## Actualización instalada en Windows — 2026-11-03
+
+Por pedido explícito del titular, se actualizaron las dos instalaciones locales:
+`Desktop/Nexo` y `%LOCALAPPDATA%/Programs/NexoClientes`, junto al ZIP para compartir
+del escritorio. Se usó el portable 3.9.0 publicado, con Node 24.22.2 x64, sin
+recompilar ni modificar el código. Los 51 archivos de cada copia coinciden por
+SHA-256 con el portable probado; el ZIP también coincide con la release.
+
+Se utilizó `update-desktop.ps1` con Source explícito y se conservó la ruta de la
+copia del escritorio. Respaldo privado, fuera de Git:
+`retirados/actualizacion-20261103-203151`, con Programa, Escritorio-Nexo, Datos y
+la distribución anterior. No se restauró ni reemplazó la base activa.
+
+Comparación SQLite en modo lectura: todas las columnas originales de contactos,
+historial, cuentas, sesiones, configuración, programaciones, jobs y cupos se
+conservan. Se agregó únicamente la columna `activity`, vacía, prevista por el
+esquema de la aplicación. La lectura del respaldo coincide con el estado previo.
+Los conteos y huellas de verificación quedan solo en QA, fuera de Git.
+
+Health real de la instalación en `127.0.0.1:18761`: ok, build/version 3.9.0.
+HTML y JS responden 200 y sirven los controles nuevos. Nexo quedó iniciado.
+No se hicieron búsquedas, pruebas de envío ni mensajes reales con estos datos.
+
+Los archivos de la extensión instalada están preparados en 1.1.0, conservando su
+configuración local. Queda recargar Nexo en `chrome://extensions`: el control
+visual de Windows se interrumpió porque no pudo determinar la URL de Chrome con
+seguridad. No se intentó otra vía de control visual ni se modificaron permisos.
+El conector MCP anterior se detuvo para reemplazar su runtime; sus rutas se
+conservaron para que el cliente vuelva a iniciarlo con los archivos nuevos.
