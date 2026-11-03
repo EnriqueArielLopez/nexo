@@ -6,7 +6,7 @@ export function inCountries(country,settings){
  return COUNTRIES.some(c=>settings.countries.includes(c.code)&&[norm(c.code),norm(c.name)].includes(norm(country)));
 }
 export function isNewProspect(value,seed='',known=[]){
- try{const candidate=handle(value);return (!seed||candidate!==handle(seed))&&!known.some(h=>handle(h)===candidate);}catch{return false;}
+ try{const candidate=handle(value);return (!seed||candidate!==handle(seed))&&!(known instanceof Set?known.has(candidate):known.some(h=>handle(h)===candidate));}catch{return false;}
 }
 export function claudeSearchRequest(settings){
  const countries=COUNTRIES.filter(c=>settings.countries.includes(c.code)).map(c=>c.name).join(', ');

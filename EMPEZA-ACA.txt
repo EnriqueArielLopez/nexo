@@ -1,53 +1,64 @@
-NEXO · CLIENTES 3.8
+NEXO · CLIENTES 3.9
 
-Nexo busca negocios (por ejemplo hoteles) que publican poco en Instagram y les
-envía tu propuesta desde tu propio Chrome, de a uno y con pausas.
+INSTALAR EN WINDOWS
+1. Descargá Nexo-Windows-portable.zip desde:
+   https://github.com/EnriqueArielLopez/nexo/releases/latest
+2. Extraé TODO el ZIP en una carpeta fija, por ejemplo Documentos\Nexo.
+   No ejecutes el programa dentro del ZIP ni muevas solo Nexo.exe.
+3. Abrí Nexo.exe y creá tu cuenta local. Cada persona usa su propia cuenta,
+   Instagram y datos. No necesitás Node, Python, Excel, API ni Claude.
+4. Para enviar por Chrome, seguí "Conectar mi Chrome": abrí Instagram en
+   Chrome e iniciá sesión; después cargá la extensión de Nexo desde
+   chrome://extensions > Modo de desarrollador > Cargar descomprimida.
+   Para buscar clientes no hace falta conectar Chrome.
 
-REQUISITOS
-- Windows 10 u 11 de 64 bits.
-- Google Chrome instalado (google.com/chrome), con tu sesión de Instagram.
-- Microsoft Edge (viene con Windows): Nexo lo usa minimizado para buscar.
-- Conexión a Internet. No hace falta ninguna clave ni Claude.
+Requisitos: Windows 10/11 x64, Microsoft Edge, Chrome para envíos e Internet.
+El ejecutable no tiene firma digital. Descargalo solo de este repositorio.
 
-INSTALAR (5 MINUTOS, UNA SOLA VEZ)
-1. Extraé TODO el ZIP en una carpeta fija, por ejemplo Documentos\Nexo
-   (clic derecho > Extraer todo). No abras Nexo.exe desde adentro del ZIP
-   y no muevas la carpeta después.
-2. Abrí Nexo.exe. Si Windows muestra "Windows protegió su PC", tocá
-   "Más información" > "Ejecutar de todos modos" (el programa no está firmado).
-3. Creá tu cuenta local (usuario y contraseña de 10 caracteres o más).
-   Tus datos quedan solo en esta computadora.
-4. Arriba aparece "Conectá Nexo con tu Google Chrome". Seguí los pasos:
-   a. Abrí instagram.com en Chrome e iniciá sesión con la cuenta que va a escribir.
-   b. En Nexo tocá "Conectar mi Chrome": se abren la página de extensiones de
-      Chrome y la carpeta de la extensión.
-   c. En Chrome activá "Modo de desarrollador" (arriba a la derecha).
-   d. Tocá "Cargar descomprimida" y elegí la carpeta que se abrió.
-   Cuando Nexo la detecta, el cartel desaparece solo.
+1 · BUSCAR
+Pegá tu Instagram y completá qué ofrecés, rubro, país y ciudad.
+Empezá con 20 clientes y alcance Rápido. La lista aparece mientras busca.
+Podés elegir 50 o 100 y alcance Ampliado para dedicar más tiempo.
+El modo rápido encuentra candidatos: NO confirma que publiquen poco.
+Revisá la actividad en el perfil antes de enviar. Si preferís que Nexo lo
+intente durante la búsqueda, activá "Verificar actividad" (más lento).
+Si el buscador pide verificación, completala vos en Edge y volvé a Nexo.
+No siempre hay suficientes resultados públicos.
 
-USARLO
-Paso 1 · Buscar: pegá tu Instagram, elegí países, categoría y rubro, y tocá
-  "Buscar hasta 100". Nexo busca en la web y revisa el perfil de cada cuenta:
-  descarta las que publican seguido y deja las que publican poco o de forma
-  irregular. Podés ir viendo los resultados mientras busca.
-Paso 2 · Elegir: la pestaña "Última búsqueda" muestra lo nuevo. "Listos para
-  contactar" son los ya verificados. Elegí "Tanda de hoy" y tocá "Marcar los
-  próximos".
-Paso 3 · Enviar: revisá el mensaje y tocá "Enviar esta tanda". Nexo abre una
-  ventana de tu Chrome, pega el mensaje, lo envía, confirma que salió, lo
-  registra y espera entre 20 y 40 segundos antes del siguiente. Si Instagram
-  muestra un aviso, la tanda se pausa sola. Mientras envía, no les escribas a
-  mano a esas cuentas.
+"Limpiar pendientes al buscar de nuevo" viene activado. Archiva los
+pendientes anteriores, conservando enviados, bajas, programados y tandas
+en curso. Recuperalos desde Más > Restaurar resultados limpiados.
 
-A nadie se le escribe dos veces. El máximo es 100 mensajes por día.
-Chrome muestra la barra "Nexo - Envíos de Instagram comenzó a depurar este
-navegador" mientras trabaja: es normal.
+2 · ELEGIR
+Última búsqueda muestra los resultados nuevos. Usá filtros de texto/país
+y los botones Anterior/Siguiente. Abrí Ver para revisar el perfil y el
+mensaje. Marcá a quién contactar y continuá al paso 3.
 
-SI ALGO NO ANDA
-- "Chrome no está conectado": abrí Chrome y fijate en chrome://extensions que
-  la extensión de Nexo esté activada.
-- El buscador pide una verificación humana: completala vos en la ventana de Edge
-  y tocá "Ya completé la verificación · continuar".
+3 · ENVIAR Y SEGUIR TRABAJANDO
+Revisá destinatarios y mensajes antes de confirmar.
+Instagram trabaja en una ventana minimizada, con pausas entre mensajes.
+Podés usar otras aplicaciones. Solo vuelve al frente para iniciar sesión
+o revisar un problema. No cierres la ventana de Chrome que usa Nexo.
+La barra de Chrome que informa que Nexo depura el navegador es normal.
+Los emails también se envían en segundo plano; configurá tu casilla en
+Ajustes. El progreso queda visible arriba en Nexo.
+Podés detener y reanudar pendientes. Los resultados inciertos se revisan
+en Más > Historial antes de intentar nuevamente.
 
-Datos: %LOCALAPPDATA%\NexoClientes\Datos. Para compartir Nexo, pasá el ZIP,
-nunca la carpeta Datos (tiene tus contactos).
+Cerrar la ventana con la X de Windows deja Nexo en el icono junto al reloj.
+Desde allí podés volver a abrirlo o elegir Cerrar Nexo. El botón Cerrar Nexo
+de la app también detiene el programa. La PC debe seguir encendida.
+
+ACTUALIZAR
+Descargá un respaldo desde Mi espacio. Cerrá Nexo desde el icono junto al
+reloj. Extraé el ZIP nuevo en una carpeta nueva y abrí Nexo.exe.
+Tus datos siguen en %LOCALAPPDATA%\NexoClientes\Datos.
+En chrome://extensions recargá Nexo con la flecha circular para que tome
+el código actualizado. No instales una segunda copia de la extensión.
+
+COMPARTIR
+Compartí el ZIP publicado, nunca Datos ni una extensión ya configurada.
+Cada persona conecta su propio Chrome y configura su propio email.
+Los cupos son internos y no garantizan evitar restricciones de Instagram.
+Respetá las bajas. No se reintenta automáticamente un envío incierto.
+La integración oficial de Meta es opcional y requiere configuración propia.

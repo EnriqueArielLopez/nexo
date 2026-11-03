@@ -1,0 +1,27 @@
+name: Validar Nexo y portable Windows
+on:
+  push:
+    branches: [main, 'codex/**']
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: npm test
+      - name: Compilar portable limpio
+        shell: powershell
+        run: ./build-portable.ps1 -OutputDirectory dist/Nexo
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Nexo-Windows-portable
+          path: |
+            dist/Nexo-Windows-portable.zip
+            dist/Nexo-Windows-portable.zip.sha256
+          if-no-files-found: error

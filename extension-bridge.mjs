@@ -11,7 +11,7 @@ export class ExtensionBridge {
  call(method,params={}){
   if(!this.connected())return Promise.reject(Error('Chrome no está conectado con Nexo: abrí Chrome y fijate que la extensión de Nexo esté activa.'));
   const id=++this.next;
-  return new Promise((resolve,reject)=>{const timer=setTimeout(()=>{this.pending.delete(id);reject(Error('Chrome no respondió a Nexo.'));},this.timeout);this.pending.set(id,{resolve,reject,timer});this.queue.push({id,method,params});this.flush();});
+  return new Promise((resolve,reject)=>{const timer=setTimeout(()=>{this.pending.delete(id);this.queue=this.queue.filter(c=>c.id!==id);reject(Error('Chrome no respondió a Nexo.'));},this.timeout);this.pending.set(id,{resolve,reject,timer});this.queue.push({id,method,params,expiresAt:Date.now()+this.timeout});this.flush();});
  }
  flush(){if(this.waiting&&this.queue.length){const done=this.waiting;this.waiting=null;done(this.queue.splice(0));}}
  // The extension waits here for the next commands.

@@ -1,0 +1,63 @@
+# Validación de Nexo 3.9
+
+Fecha: 2026-11-03, Argentina. Revisión base: `8710f0f`.
+
+## Alcance
+
+Trabajo sobre una rama feature desde `main`. Nexo es una aplicación Windows
+independiente del catálogo `ps-stack`; no se desplegó ni modificó infraestructura
+compartida de Development/Producción. Local no se presenta como esos ambientes.
+No se modificó la instalación activa ni la base de la persona usuaria.
+
+## Pruebas realizadas
+
+- 109 pruebas Node pasan (incluyen las 97 previas) después de los cambios de búsqueda, almacenamiento,
+  UI y envío. Se incorporaron regresiones de búsqueda rápida, huella de filtros,
+  limpieza/restauración, cupos al cambiar de mes, comandos vencidos, minimización,
+  recuperación de tandas, detención durante login y colas de email.
+- Smoke HTTP con proceso real y base aislada: login, CSRF/origen, 1.200 clientes,
+  edición, rechazo de envío sin confirmación/huella válida, limpieza de 1.199
+  contactos conservando un evento, restauración y descarga Excel. La respuesta
+  de estado con 1.200 clientes se midió entre 106 y 439 ms en esta PC con Node 22/24 y distintas cargas (mediciones puntuales,
+  no promesa de latencia).
+- UI con cuenta y 120 contactos ficticios: páginas 1–50/51–100, filtro por nombre,
+  editor y guardado de borrador, recuperación de tanda pausada con enviados y
+  pendientes, controles visibles desde otros pasos y configuración rápida.
+
+Los envíos automatizados de las pruebas usan proveedores simulados. No se
+enviaron propuestas, emails ni mensajes reales, ni se usaron tokens del titular.
+La búsqueda rápida reduce el trabajo por candidato; no se midió una mejora
+porcentual de resultados reales ni se garantiza encontrar 100.
+
+- Búsqueda pública real desde la UI, en base aislada: Hoteles, Salta, todas las
+  categorías, oferta de fotografía/redes. Encontró 20/20 candidatos en 21 segundos,
+  con 1 consulta, 3 páginas y 21 resultados examinados. Actividad sin verificar,
+  cero llamadas de pago y cero mensajes. La limpieza retiró 119 candidatos
+  ficticios y conservó el único evento ficticio previo. No extrapolar estos
+  tiempos a otras regiones o al objetivo de 100.
+- Compilación x64 y 9 comprobaciones de health del lanzador correctas.
+- Portable: 51 entradas, Node 24.22.2 x64, ZIP íntegro y SHA-256 verificado; sin
+  bases, perfiles, configuraciones personales ni datos de QA. Código empaquetado
+  coincidente por hash con el probado. No se alteró el runtime instalado de la PC.
+
+- Smoke adicional del servidor ejecutado desde el portable con su propio Node:
+  acceso, 1.200 clientes, edición, limpieza/restauración y Excel correctos; estado
+  en 266 ms. Las pruebas usan una base temporal independiente.
+
+## Límites y validaciones pendientes
+
+- Validar una tanda con sesión real de Chrome y destinatarios/textos aprobados,
+  trabajando a la vez en otras ventanas. Las pruebas de protocolo no sustituyen
+  la sesión real de Instagram ni sus cambios de interfaz.
+- Verificar SMTP con la casilla de quien vaya a usar el programa.
+- Probar instalación completa en otra PC física Windows 10/11 y carga/recarga de
+  extensión por esa persona. El portable limpio no contiene sesiones ni datos.
+- CI está preparado en `docs/validate-workflow.example.yml`, sin activar. GitHub
+  rechazó crear el workflow porque la credencial OAuth del titular no tiene el
+  scope `workflow`; la otra cuenta conectada solo tiene lectura en este repo.
+  El código y los releases sí se pueden publicar. No se ampliaron permisos.
+- La aplicación y extensión no tienen firma/publicación en una tienda. El paquete
+  incluye la guía manual; la configuración oficial de Meta sigue siendo opcional.
+
+Los resultados de compilación final, portable desde `main` y publicación se
+registran al cerrar esta versión.
