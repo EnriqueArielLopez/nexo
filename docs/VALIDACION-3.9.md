@@ -65,5 +65,23 @@ la página actual y conserve la selección de otras páginas, hasta el máximo d
 100 al agregar la segunda, y 50 conservados al desmarcar la segunda. La tanda
 por cantidad sigue abarcando todos los resultados.
 
-Los resultados de compilación final, portable desde `main` y publicación se
-registran al cerrar esta versión.
+## Cierre
+
+- PR [#1](https://github.com/EnriqueArielLopez/nexo/pull/1) y
+  [#2](https://github.com/EnriqueArielLopez/nexo/pull/2) mergeados. Código final
+  en `main`, commit `36b2c1ec02a3bdd2cd39519aadbc9563fc53d9aa`.
+- Main validado nuevamente por HTTP y por UI para la selección paginada. Portable
+  definitivo reconstruido desde main y smoke HTTP desde su propio runtime:
+  correcto, 1.200 clientes y respuesta de estado de 149 ms en esa ejecución.
+- Release pública [v3.9.0](https://github.com/EnriqueArielLopez/nexo/releases/tag/v3.9.0),
+  con ZIP Windows x64 de 35.493.497 bytes y archivo `.sha256`. El ZIP tiene 51 entradas;
+  el codigo y los assets de la app coinciden con main. SHA-256 del ZIP:
+  `8605afca07628e2d80ef5d64f8320aea50c082f517c2b3881d5f016303f63cfc`.
+- Descarga pública y checksum verificados después de publicar. Se conserva la
+  release 3.8 para rollback. No se actualizó la instalación personal de esta PC.
+- Ramas locales/remotas `codex/nexo-rendimiento-y-envios` y
+  `codex/nexo-seleccion-paginada` eliminadas después de merge y validación de main.
+- Servidor y pestañas QA cerrados; datos y evidencias aislados fuera de Git.
+  Docs actualizadas: README, EMPEZA-ACA, arquitectura y este registro. La
+  documentación de infraestructura compartida no cambia porque Nexo sigue
+  fuera de ese catálogo y no se tocaron sus ambientes, rutas ni servicios.
