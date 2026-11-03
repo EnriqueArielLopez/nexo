@@ -117,3 +117,12 @@ visual de Windows se interrumpió porque no pudo determinar la URL de Chrome con
 seguridad. No se intentó otra vía de control visual ni se modificaron permisos.
 El conector MCP anterior se detuvo para reemplazar su runtime; sus rutas se
 conservaron para que el cliente vuelva a iniciarlo con los archivos nuevos.
+
+### Verificación de acceso — 2026-11-03
+
+Se confirmó el ingreso real de la cuenta local mediante el endpoint de login
+(HTTP 200), sin modificar usuario ni contraseña. El rechazo informado era un
+bloqueo temporal por intentos fallidos; se reinició únicamente Nexo después de
+verificar la credencial contra la base activa y el respaldo. La sesión creada
+para la comprobación se revocó al terminar. No se guardó la contraseña en scripts,
+archivos o documentación y no se realizaron envíos.
