@@ -4,7 +4,7 @@
 // accounts that aren't lodgings, that post often, or that were already contacted. Debugging listens only on loopback.
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import {spawn,spawnSync} from 'node:child_process';
+import {spawn} from 'node:child_process';
 import net from 'node:net';
 import {DevtoolsConnection} from './browser-search.mjs';
 import {otherTrade} from './web-discovery.mjs';
@@ -38,11 +38,12 @@ const BOX=`document.querySelector('div[contenteditable="true"][role="textbox"]')
 const PANE=`(()=>{const box=${BOX},list=document.querySelector('[aria-label="Lista de conversaciones"],[aria-label="Conversation list"],[aria-label="Thread list"]');const main=document.querySelector('[role="main"]')||document.body;if(!box){let t=main.innerText;if(list&&main.contains(list))t=t.replace(list.innerText,'');return t;}let el=box;while(el.parentElement&&el.parentElement!==document.body&&!(list&&el.parentElement.contains(list)))el=el.parentElement;return el.innerText;})()`;
 
 export class InstagramSender {
- constructor(profileDir,{store,onChange,saveExcel=async()=>{},connect=DevtoolsConnection.connect,launch=spawn,edge=findBrowser,readFile=fs.readFile,pause=[20000,40000],wait=sleep,loginWait=300,bridge=null}={}){
-  Object.assign(this,{profileDir:path.resolve(profileDir),store,onChange,saveExcel,connect,launch,edge,readFile,pause,wait,loginWait,bridge});this.client=null;this.sessionId='';this.targetId='';
-  this.state={status:'idle',total:0,sent:0,skipped:0,current:'',nextAt:0,message:'',items:[]};
+ constructor(profileDir,{store,onChange,saveExcel=async()=>{},connect=DevtoolsConnection.connect,launch=spawn,edge=findBrowser,readFile=fs.readFile,pause=[20000,40000],wait=sleep,loginWait=300,bridge=null,jobName='chromeSender'}={}){
+  Object.assign(this,{profileDir:path.resolve(profileDir),store,onChange,saveExcel,connect,launch,edge,readFile,pause,wait,loginWait,bridge,jobName});this.client=null;this.sessionId='';this.targetId='';
+  this.active=false;this.state=(jobName?store?.job(jobName):null)||{status:'idle',total:0,sent:0,skipped:0,current:'',nextAt:0,message:'',items:[]};
+  if(['running','waiting','login'].includes(this.state.status)){this.state={...this.state,status:'paused',current:'',nextAt:0,message:'La tanda se interrumpió. Revisá el historial y reanudá los pendientes.'};this.emit();}
  }
- publicState(){return {...this.state,items:this.state.items.map(i=>({...i}))};}
+ publicState(){return {...this.state,active:this.active,items:this.state.items.map(i=>({...i}))};}
  // Chrome 156 doesn't report a port it picks itself, so Nexo picks a free one and keeps it next to the profile.
  async endpoint(){const saved=Number(String(await this.readFile(path.join(this.profileDir,'nexo-port'),'utf8').catch(()=>'')).trim());if(Number.isInteger(saved)&&saved>=1024&&saved<=65535){const r=await fetch(`http://127.0.0.1:${saved}/json/version`,{signal:AbortSignal.timeout(2000)}).then(r=>r.json()).catch(()=>null);const ws=r?.webSocketDebuggerUrl;if(typeof ws==='string'&&new URL(ws).hostname==='127.0.0.1'&&/^\/devtools\/browser\/[a-z0-9-]+$/i.test(new URL(ws).pathname))return ws;}
   const text=await this.readFile(path.join(this.profileDir,'DevToolsActivePort'),'utf8');const [line,browserPath]=text.trim().split(/\r?\n/);const port=Number(line);if(!Number.isInteger(port)||port<1024||port>65535||!/^\/devtools\/browser\/[a-z0-9-]+$/i.test(browserPath))throw Error('Puerto del navegador inválido.');return 'ws://127.0.0.1:'+port+browserPath;}
@@ -53,11 +54,10 @@ export class InstagramSender {
   else try{this.client=await this.connect(await this.endpoint());}catch{}
   if(!this.client){
    await fs.mkdir(this.profileDir,{recursive:true});const executable=await this.edge();
-   // A window of this profile left open without the connection would swallow the new one: close it first.
-   if(this.launch===spawn&&process.platform==='win32')spawnSync('powershell.exe',['-NoProfile','-Command',`Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like '*--user-data-dir=${this.profileDir.replace(/'/g,"''")}*' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }`],{windowsHide:true,timeout:15000});
+   // Reuse the dedicated profile; never synchronously scan or terminate browser processes.
    const port=await freePort();await fs.writeFile(path.join(this.profileDir,'nexo-port'),String(port));
    // A profile only for Nexo's sends: the user signs in to Instagram there once.
-   const child=this.launch(executable,['--remote-debugging-address=127.0.0.1','--remote-debugging-port='+port,'--user-data-dir='+this.profileDir,'--no-first-run','--no-default-browser-check','--new-window','--window-size=1100,850','about:blank'],{stdio:'ignore',windowsHide:false,detached:true});
+   const child=this.launch(executable,['--remote-debugging-address=127.0.0.1','--remote-debugging-port='+port,'--user-data-dir='+this.profileDir,'--no-first-run','--no-default-browser-check','--start-minimized','--new-window','--window-size=1100,850','about:blank'],{stdio:'ignore',windowsHide:true,detached:true});
    let launchError=null;child.once('error',e=>{launchError=e;});child.unref();
    for(let i=0;i<120&&!this.client;i++){if(launchError)throw Error('No se pudo abrir Chrome.');await sleep(250);try{this.client=await this.connect(await this.endpoint());}catch{}}
    if(!this.client)throw Error('No se pudo abrir la ventana de envíos de Nexo. Cerrala y volvé a intentar.');
@@ -91,33 +91,37 @@ export class InstagramSender {
  async minimize(){const {windowId}=await this.client.call('Browser.getWindowForTarget',{targetId:this.targetId});await this.client.call('Browser.setWindowBounds',{windowId,bounds:{windowState:'minimized'}});}
  async click(x,y){for(const type of ['mousePressed','mouseReleased'])await this.client.call('Input.dispatchMouseEvent',{type,x,y,button:'left',clickCount:1},this.sessionId);}
  log(item,status,note){Object.assign(item,{status,note});this.state.current='';this.emit();}
- emit(){this.onChange?.(this.publicState());}
- stop(){if(['running','waiting'].includes(this.state.status)){this.cancel=true;this.state.message='Deteniendo después del envío en curso…';}}
+ emit(){if(this.jobName)this.store?.setJob(this.jobName,this.state);this.onChange?.(this.publicState());}
+ async delay(ms){if(this.wait!==sleep)return this.wait(ms);if(this.cancel)return;await new Promise(resolve=>{this.wake=()=>{clearTimeout(timer);this.wake=null;resolve();};const timer=setTimeout(this.wake,ms);});}
+ clear(){if(this.active)throw Error('Detené la tanda antes de limpiarla.');this.state={status:'idle',total:0,sent:0,skipped:0,current:'',nextAt:0,message:'',items:[]};this.emit();}
+ resume(){if(this.active)throw Error('La tanda todavía está en curso.');if(!this.state.items.some(i=>i.status==='pending'))throw Error('No hay envíos pendientes para reanudar.');this.cancel=false;this.state.status='running';this.state.message='Reanudando los pendientes…';this.launchRun();return this.publicState();}
+ launchRun(){this.active=true;this.emit();this.done=this.run().catch(e=>{this.state.status='error';this.state.message=e.message;}).finally(()=>{this.active=false;this.state.nextAt=0;this.emit();});}
+ stop(){if(this.active){this.cancel=true;this.wake?.();this.state.message='Deteniendo después del envío en curso…';this.emit();}}
  start(items){
-  if(['running','waiting'].includes(this.state.status))throw Error('Ya hay una tanda enviándose.');
+  if(this.active)throw Error('Ya hay una tanda enviándose.');
   if(!items.length)throw Error('No hay clientes para enviar.');
   this.cancel=false;this.state={status:'running',total:items.length,sent:0,skipped:0,current:'',nextAt:0,message:'Preparando la ventana de envíos…',items:items.map(l=>({id:l.id,name:l.name||l.handle,handle:l.handle,message:l.message,status:'pending',note:''}))};
-  this.done=this.run().catch(e=>{this.state.status='error';this.state.message=e.message;this.emit();});return this.publicState();
+  this.launchRun();return this.publicState();
  }
  async run(){
-  await this.ensure();await this.show();
+  await this.ensure();await this.minimize();
   if(!(await this.loggedIn())){
    // First time: the user signs in to Instagram in this window and the batch starts by itself.
-   await this.go('https://www.instagram.com/accounts/login/');this.state.status='login';this.state.message='Iniciá sesión en Instagram en la ventana que se abrió. Apenas entres, Nexo empieza a enviar solo.';this.emit();
-   for(let i=0;i<this.loginWait&&!this.cancel;i++){await this.wait(3000);if(await this.loggedIn().catch(()=>false))break;}
-   if(this.cancel||!(await this.loggedIn().catch(()=>false))){this.state.status='login';this.state.message='No se inició sesión en Instagram. Iniciá sesión en la ventana de Nexo y tocá «Reanudar el envío».';this.emit();return;}
-   this.state.status='running';await this.wait(4000);
+   await this.show();await this.go('https://www.instagram.com/accounts/login/');this.state.status='login';this.state.message='Iniciá sesión en Instagram en la ventana que se abrió. Apenas entres, Nexo empieza a enviar solo.';this.emit();
+   for(let i=0;i<this.loginWait&&!this.cancel;i++){await this.delay(3000);if(await this.loggedIn().catch(()=>false))break;}
+   if(this.cancel||!(await this.loggedIn().catch(()=>false))){this.state.status=this.cancel?'paused':'login';this.state.message=this.cancel?'Tanda detenida. Podés reanudar los pendientes.':'No se inició sesión en Instagram. Iniciá sesión en la ventana de Nexo y tocá «Reanudar el envío».';this.emit();return;}
+   this.state.status='running';await this.minimize();await this.delay(4000);
   }
   const items=this.state.items;
   for(const [n,item] of items.entries()){
-   if(this.cancel)break;
+   if(this.cancel)break;if(item.status!=='pending')continue;
    this.state.current=item.handle;this.state.message=`Revisando @${item.handle} (${n+1} de ${items.length})`;this.emit();
    let sent=false;
-   try{sent=await this.exclusive(()=>this.one(item));}catch(e){if(e.stopBatch){this.log(item,'failed',e.message);this.state.status='paused';this.state.message=e.message;this.emit();return;}this.log(item,'failed',e.message);}
-   if(item.status!=='sent')this.state.skipped++;else this.state.sent++;
+   try{sent=await this.exclusive(()=>this.one(item));}catch(e){if(e.stopBatch){this.log(item,'failed',e.message);if(/Instagram mostró|confirmar el envío|No se abrió el chat/.test(e.message))await this.show().catch(()=>{});this.state.status='paused';this.state.message=e.message;this.emit();return;}this.log(item,'failed',e.message);}
+   if(item.status==='sent')this.state.sent++;else if(item.status!=='pending')this.state.skipped++;
    this.emit();
    const rest=items.slice(n+1).some(i=>i.status==='pending');
-   if(rest&&!this.cancel){const ms=sent?this.pause[0]+Math.random()*(this.pause[1]-this.pause[0]):3000+Math.random()*3000;this.state.status='waiting';this.state.nextAt=Date.now()+ms;this.state.message=sent?`Enviado a @${item.handle}. Próximo en ${Math.round(ms/1000)} segundos.`:`Salteado @${item.handle}. Sigue con el próximo.`;this.emit();await this.wait(ms);this.state.status='running';this.state.nextAt=0;}
+   if(rest&&!this.cancel){const ms=sent?this.pause[0]+Math.random()*(this.pause[1]-this.pause[0]):3000+Math.random()*3000;this.state.status='waiting';this.state.nextAt=Date.now()+ms;this.state.message=sent?`Enviado a @${item.handle}. Próximo en ${Math.round(ms/1000)} segundos.`:`Salteado @${item.handle}. Sigue con el próximo.`;this.emit();await this.delay(ms);this.state.status='running';this.state.nextAt=0;}
   }
   await this.go('about:blank').catch(()=>{});
   this.state.status=this.cancel?'paused':'done';this.state.current='';this.state.message=this.cancel?`Detenido: ${this.state.sent} enviados.`:`Listo: ${this.state.sent} enviados${this.state.skipped?`, ${this.state.skipped} salteados`:''}.`;this.emit();
@@ -127,10 +131,11 @@ export class InstagramSender {
   const store=this.store,lead=store.get(item.id);
   const block=lead&&store.gate({...lead,approved:1,qualification:''},new Date());
   if(!lead||block){this.log(item,'skipped',block||'Ya no está en la lista');return false;}
+  if(lead.message!==item.message)throw Object.assign(Error('La propuesta cambió. Revisá la tanda antes de enviar.'),{stopBatch:true});
   const p=await this.read(item.handle);
   if(p.warning)throw Object.assign(Error('Instagram mostró un aviso. Se pausó la tanda: revisá la ventana de Nexo antes de seguir.'),{stopBatch:true});
   if(p.missing){store.update(item.id,{dnc:true});this.log(item,'skipped','La cuenta ya no existe');return false;}
-  if(otherTrade({title:p.title,url:`https://www.instagram.com/${item.handle}/`})){store.update(item.id,{dnc:true});this.log(item,'skipped','No es un alojamiento: '+p.title.slice(0,60));return false;}
+  if(/hotel|resort|posada|hostal|apart/i.test(store.settings().segment)&&otherTrade({title:p.title,url:`https://www.instagram.com/${item.handle}/`})){store.update(item.id,{dnc:true});this.log(item,'skipped','No es un alojamiento: '+p.title.slice(0,60));return false;}
   if(p.dates){const a=store.setActivity(item.id,{dates:p.dates,source:'profile',note:'Revisado por Nexo antes de enviar'});if(a.verdict==='active'){store.update(item.id,{approved:false});this.log(item,'skipped',`Publica seguido (${a.weeks} de ${a.span} semanas)`);return false;}}
   else{let checked=false;try{checked=['profile','user'].includes(JSON.parse(lead.activity||'{}').source);}catch{}if(!checked){this.log(item,'skipped','No se pudieron leer sus publicaciones');return false;}}
   this.state.message=`Escribiendo a @${item.handle}`;this.emit();
@@ -153,12 +158,15 @@ export class InstagramSender {
   await sleep(500);
   const draft=await this.box();
   if(!draft||flat(draft.text)!==flat(message))throw Object.assign(Error(`El mensaje para @${item.handle} no se pegó completo. Se pausó la tanda sin enviarlo.`),{stopBatch:true});
+  if(this.cancel){item.note='Pendiente: tanda detenida antes de enviar';return false;}
   const event=store.reserve(item.id);
+  try{
   await this.key(0);
   for(let i=0;i<30;i++){await sleep(500);const now=await this.box().catch(()=>null);const text=flat(await this.eval(PANE).catch(()=>''));
    if(WARNING.test(text)){store.finish(event.event,'uncertain','Instagram mostró un aviso al enviar');throw Object.assign(Error('Instagram mostró un aviso al enviar. Se pausó la tanda: revisá la ventana de Nexo.'),{stopBatch:true});}
    if(now&&!flat(now.text)&&text.includes(probe)){store.finish(event.event,'sent','Enviado por Nexo');this.log(item,'sent','Enviado');await this.saveExcel().catch(()=>{});return true;}}
   // The text left the box but didn't show up: counts as contacted so it's never sent twice; the user checks it.
   store.finish(event.event,'uncertain','No se pudo confirmar en el chat');throw Object.assign(Error(`No se pudo confirmar el envío a @${item.handle}. Se pausó la tanda: fijate en la ventana de Nexo si salió.`),{stopBatch:true});
+  }catch(e){const status=store.db.prepare('SELECT status FROM events WHERE id=?').get(event.event)?.status;if(status==='pending')store.finish(event.event,'uncertain','Conexión interrumpida después de preparar el envío');e.stopBatch=true;throw e;}
  }
 }

@@ -44,6 +44,8 @@ test('envío automático: revisa el perfil, pega con saltos de línea, envía, c
   s.start(items);await s.done;
   const by=Object.fromEntries(s.state.items.map(i=>[i.handle,i]));
   assert.equal(s.state.status,'done');
+  assert.ok(ig.calls.some(([m,p])=>m==='Browser.setWindowBounds'&&p.bounds.windowState==='minimized'));
+  assert.ok(!ig.calls.some(([m])=>m==='Target.activateTarget'),'una tanda con sesión no roba el foco');
   assert.equal(by.hotel_sol.status,'sent');assert.match(ig.chats.hotel_sol,/¡Hola!\nSoy Mica\./);
   assert.ok(ig.calls.some(([m,p])=>m==='Input.dispatchKeyEvent'&&p.key==='Enter'&&p.modifiers===8),'salto de línea con Shift+Enter');
   assert.equal(by.barber.status,'skipped');assert.match(by.barber.note,/No es un alojamiento/);assert.equal(f.store.get(items[1].id).dnc,1);
@@ -64,6 +66,18 @@ test('envío automático: sin sesión de Instagram abre el inicio de sesión y n
 });
 test('las fechas salen del código de cada publicación, sin abrirla',()=>{
  assert.equal(postDate('Deawu9VkSEG'),'2026-10-13');assert.equal(postDate(codeOf('2025-03-02')),'2025-03-02');assert.equal(postDate('$$$'),'');
+});
+
+test('una desconexión después de reservar el envío queda incierta y no se reintenta',async()=>{
+ const f=fixture();try{
+  const ig=fakeInstagram({hotel_corte:{title:'Hotel Corte',dates:['2025-01-01']}}),base=ig.client.call;
+  ig.client.call=async(m,p)=>{if(m==='Input.dispatchKeyEvent'&&p.type==='keyDown'&&p.key==='Enter'&&p.modifiers===0)throw Error('Conexión cortada al enviar');return base(m,p);};
+  const s=new InstagramSender(os.tmpdir(),{store:f.store,connect:async()=>ig.client,readFile:async()=>'9222\n/devtools/browser/abc',wait:async()=>{}});
+  s.start([lead(f.store,'hotel_corte')]);await s.done;
+  assert.equal(s.state.status,'paused');assert.equal(f.store.history()[0].status,'uncertain');
+  assert.match(f.store.list()[0].block,/sin confirmar/);assert.equal(f.store.counts().daily,1);
+  assert.throws(()=>s.resume(),/No hay envíos pendientes/);
+ }finally{f.close();}
 });
 test('envío automático: si falta iniciar sesión, espera a que entre y sigue solo',async()=>{
  const f=fixture();try{

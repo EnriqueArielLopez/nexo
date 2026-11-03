@@ -52,8 +52,9 @@ static class Launcher {
     }
     sealed class TrayContext:ApplicationContext {
         NotifyIcon tray;System.Windows.Forms.Timer timer;
-        int missing=0,fails=0; bool windowSeen=false; readonly Process server;
-        public TrayContext(Process server){this.server=server;var menu=new ContextMenuStrip();menu.Items.Add("Abrir Nexo",null,(s,e)=>Open());menu.Items.Add("Cerrar Nexo",null,(s,e)=>{Quit();CloseWindows();ExitThread();});tray=new NotifyIcon{Text="Nexo · Clientes",Icon=Icon.ExtractAssociatedIcon(Application.ExecutablePath),Visible=true,ContextMenuStrip=menu};tray.DoubleClick+=(s,e)=>Open();timer=new System.Windows.Forms.Timer{Interval=3000};timer.Tick+=(s,e)=>{if(!Ready(4000)){fails++;if(server.HasExited||fails>=10){CloseWindows();ExitThread();}return;}fails=0;if(Windows().Count==0&&windowSeen){missing++;if(missing>=4){Quit();ExitThread();}}else {missing=0;if(Windows().Count>0)windowSeen=true;}};timer.Start();}
+        int fails=0; readonly Process server;
+        public TrayContext(Process server){this.server=server;var menu=new ContextMenuStrip();menu.Items.Add("Abrir Nexo",null,(s,e)=>Open());menu.Items.Add("Cerrar Nexo",null,(s,e)=>{Quit();CloseWindows();ExitThread();});tray=new NotifyIcon{Text="Nexo · Clientes",Icon=Icon.ExtractAssociatedIcon(Application.ExecutablePath),Visible=true,ContextMenuStrip=menu};tray.DoubleClick+=(s,e)=>Open();timer=new System.Windows.Forms.Timer{Interval=3000};timer.Tick+=(s,e)=>{if(!Ready(4000)){fails++;if(server.HasExited||fails>=10){CloseWindows();ExitThread();}return;}fails=0;// Closing the app window keeps the local worker and tray alive.
+            };timer.Start();}
         protected override void ExitThreadCore(){timer.Stop();tray.Visible=false;tray.Dispose();base.ExitThreadCore();}
     }
 }

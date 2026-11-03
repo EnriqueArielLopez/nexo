@@ -1,6 +1,7 @@
 // Product integration: a separate, minimized Edge profile for public searches only.
 // No stealth flags, CAPTCHA solving, personal browser profile or private sessions.
 import fs from 'node:fs/promises';
+import {setTimeout as delay} from 'node:timers/promises';
 import path from 'node:path';
 import {spawn} from 'node:child_process';
 import {PublicWebDiscovery,parseSearchResults} from './web-discovery.mjs';
@@ -10,7 +11,7 @@ export const needsHuman=html=>/anomaly\.js|anomaly-modal|g-recaptcha|unusual tra
 export class DevtoolsConnection {
  constructor(socket){this.socket=socket;this.next=0;this.pending=new Map();socket.addEventListener('message',event=>{let msg;try{msg=JSON.parse(String(event.data));}catch{return;}const request=this.pending.get(msg.id);if(!request)return;this.pending.delete(msg.id);clearTimeout(request.timer);if(msg.error)request.reject(Error('El navegador no pudo completar la operación.'));else request.resolve(msg.result||{});});socket.addEventListener('close',()=>{for(const p of this.pending.values()){clearTimeout(p.timer);p.reject(Error('Se cerró la ventana del buscador. Volvé a iniciar la búsqueda.'));}this.pending.clear();});}
  static async connect(url){const u=new URL(url);if(u.protocol!=='ws:'||u.hostname!=='127.0.0.1'||!/^\/devtools\/browser\/[a-z0-9-]+$/i.test(u.pathname))throw Error('Conexión local de navegador inválida.');const socket=new WebSocket(u);await new Promise((resolve,reject)=>{const timer=setTimeout(()=>{socket.close();reject(Error('No se pudo conectar con la ventana del buscador.'));},8000);socket.addEventListener('open',()=>{clearTimeout(timer);resolve();},{once:true});socket.addEventListener('error',()=>{clearTimeout(timer);reject(Error('No se pudo conectar con el navegador.'));},{once:true});});return new DevtoolsConnection(socket);}
- call(method,params={},sessionId){return new Promise((resolve,reject)=>{if(this.socket.readyState!==1)return reject(Error('La ventana de búsqueda está cerrada.'));const id=++this.next;const timer=setTimeout(()=>{this.pending.delete(id);reject(Error('El navegador no respondió a tiempo.'));},10000);this.pending.set(id,{resolve,reject,timer});this.socket.send(JSON.stringify({id,method,params,...(sessionId?{sessionId}:{})}));});}
+ call(method,params={},sessionId){return new Promise((resolve,reject)=>{if(this.socket.readyState!==1)return reject(Error('La ventana de búsqueda está cerrada.'));const id=++this.next;const timer=setTimeout(()=>{this.pending.delete(id);reject(Error('El navegador no respondió a tiempo.'));},method==='Runtime.evaluate'&&params.awaitPromise?30000:10000);this.pending.set(id,{resolve,reject,timer});this.socket.send(JSON.stringify({id,method,params,...(sessionId?{sessionId}:{})}));});}
  close(){this.socket.close();}
 }
 async function findEdge(){
@@ -69,7 +70,7 @@ export class BrowserWebDiscovery extends PublicWebDiscovery {
  slowDown(){this.delayMs=Math.max(this.delayMs,7000);}
  async search(q){
   if(this.signal?.aborted)throw Error('Búsqueda detenida.');
-  const wait=Math.max(0,this.lastSearch+this.delayMs-Date.now());if(wait)await new Promise(r=>setTimeout(r,wait));
+  const wait=Math.max(0,this.lastSearch+this.delayMs-Date.now());if(wait)await delay(wait,undefined,{signal:this.signal});
   if(this.signal?.aborted)throw Error('Búsqueda detenida.');
   this.lastSearch=Date.now();this.calls++;
   let page=await this.browser.read('https://html.duckduckgo.com/html/?q='+encodeURIComponent(q),{signal:this.signal});
@@ -84,7 +85,7 @@ export class BrowserWebDiscovery extends PublicWebDiscovery {
  }
  async nextPage(){
   if(this.signal?.aborted)throw Error('Búsqueda detenida.');
-  const wait=Math.max(0,this.lastSearch+this.delayMs-Date.now());if(wait)await new Promise(r=>setTimeout(r,wait));
+  const wait=Math.max(0,this.lastSearch+this.delayMs-Date.now());if(wait)await delay(wait,undefined,{signal:this.signal});
   if(this.signal?.aborted)throw Error('Búsqueda detenida.');
   const page=await this.browser.next({signal:this.signal});if(!page)return [];
   this.calls++;this.lastSearch=Date.now();let current=page;
