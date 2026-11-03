@@ -59,5 +59,11 @@ porcentual de resultados reales ni se garantiza encontrar 100.
 - La aplicación y extensión no tienen firma/publicación en una tienda. El paquete
   incluye la guía manual; la configuración oficial de Meta sigue siendo opcional.
 
+La revisión final ajusta Seleccionar clientes visibles para que actúe solo sobre
+la página actual y conserve la selección de otras páginas, hasta el máximo de
+100. UI comprobada con 140 contactos: 50 seleccionados en la primera página,
+100 al agregar la segunda, y 50 conservados al desmarcar la segunda. La tanda
+por cantidad sigue abarcando todos los resultados.
+
 Los resultados de compilación final, portable desde `main` y publicación se
 registran al cerrar esta versión.
