@@ -126,3 +126,16 @@ bloqueo temporal por intentos fallidos; se reinició únicamente Nexo después d
 verificar la credencial contra la base activa y el respaldo. La sesión creada
 para la comprobación se revocó al terminar. No se guardó la contraseña en scripts,
 archivos o documentación y no se realizaron envíos.
+
+La comprobación posterior se realizó también desde el formulario real en el
+navegador integrado, contra `127.0.0.1:18761`: acceso correcto, planilla visible y
+sesión conservada al recargar, sin errores en el formulario. La evidencia queda
+en QA, fuera de Git. Se cerró un lanzador duplicado que había quedado del reinicio,
+conservando el lanzador propietario del servidor activo.
+
+La ventana nativa del escritorio sigue sin poder comprobarse por control visual:
+falló la identificación de la ventana, el arranque mediante esa herramienta
+(`ShellExecuteW returned 2`) y venció su autorización de acceso a la carpeta abierta.
+Se dejó una sesión funcional en el navegador integrado y se reabrió Nexo mediante
+su lanzador instalado. Queda identificar el mensaje exacto informado en la ventana
+del escritorio si el rechazo continúa allí.
