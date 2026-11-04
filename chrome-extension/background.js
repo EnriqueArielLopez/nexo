@@ -12,10 +12,10 @@ async function ensureTab(){
  await ready;
  if(tabId!==null){try{const tab=await chrome.tabs.get(tabId);windowId=tab.windowId;return;}catch{tabId=null;attached=false;}}
  // A window apart, so the user's tabs are never touched.
- const w=await chrome.windows.create({url:'about:blank',focused:false,width:1100,height:850});
+ const w=await chrome.windows.create({url:'about:blank',focused:false,state:'minimized'});
  windowId=w.id;tabId=w.tabs[0].id;attached=false;await chrome.windows.update(windowId,{state:'minimized'});await remember();
 }
-async function attach(){await ensureTab();if(!attached){try{await chrome.debugger.attach({tabId},'1.3');}catch(e){if(!/already attached/i.test(String(e?.message)))throw e;}attached=true;}}
+async function attach(){await ensureTab();if(!attached){try{await chrome.debugger.attach({tabId},'1.3');}catch(e){if(!/already attached/i.test(String(e?.message)))throw e;}attached=true;await chrome.debugger.sendCommand({tabId},'Emulation.setFocusEmulationEnabled',{enabled:true});}}
 chrome.debugger.onDetach.addListener(source=>{if(source.tabId===tabId)attached=false;});
 chrome.tabs.onRemoved.addListener(id=>{if(id===tabId){tabId=null;windowId=null;attached=false;}});
 

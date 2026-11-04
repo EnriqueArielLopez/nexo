@@ -51,11 +51,32 @@ una verificación humana pueden prolongarlo. Detener libera las esperas.
 ## Tandas en segundo plano
 
 `instagram-sender.mjs` conserva destinatarios, estados y mensajes en el job
-`chromeSender`. Arranca minimizado y usa la extensión dentro del Chrome del
-titular. Solo el inicio de sesión o un problema de envío necesita mostrarlo.
+`chromeSender`. La extensión 1.2 crea su ventana con `focused:false` y
+`state:minimized`, sin pasar por una ventana normal. La emulación de foco se
+recupera al adjuntar el depurador y después de navegar. Solo el inicio de sesión
+muestra Chrome automáticamente; un error informa/pausa en Nexo sin activarlo.
 Hay un solo worker activo; detener interrumpe la espera entre destinatarios y
 reanudar toma únicamente los pendientes. Tras reiniciar queda pausado.
 Un envío incierto se registra y bloquea; no se repite automáticamente.
+
+Antes de navegar se aplica el historial SQLite indexado. `instagram-chat.mjs`
+identifica el perfil exacto dentro del panel del editor, excluye el listado
+lateral y lee filas de mensajes (texto o multimedia), nunca solo un fragmento de
+la propuesta actual. La tarjeta inicial del perfil y el borrador no cuentan como
+mensajes. La lectura del chat está acotada a 25 comprobaciones locales separadas
+por 400 ms, además de los tiempos de navegación/protocolo. Un vacío debe estar
+estable, sin carga pendiente y con identidad y estructura reconocidas. No se
+escanea toda la bandeja ni se conserva una caché negativa de chats vacíos.
+
+Una conversación previa crea un evento `contacted`, sin texto privado ni mensaje
+supuestamente enviado. La escritura es transaccional e idempotente; no sustituye
+un evento enviado o incierto. No consume cupo, cancela programaciones pendientes y
+bloquea nuevas tandas por cualquier canal, igual que el historial anterior. La UI
+la conserva en Enviados con fecha de detección, sin atribuir esa fecha al mensaje
+anterior. El índice `event_contact_latest` incorpora este estado sin borrar datos.
+La limpieza y la búsqueda conservan esos contactos. Se reutiliza una lectura de
+actividad del perfil de menos de 24 horas. Antes del Enter se vuelve a comprobar
+el chat para detectar historial que haya terminado de cargar durante la escritura.
 
 El endpoint de inicio exige confirmación y la huella de la vista previa. Se
 revisan bajas, actividad, cupos y cambios del mensaje antes de escribir. La
@@ -81,7 +102,7 @@ No empaqueta datos, perfiles, secretos ni QA. Los paquetes son específicos de
 Windows x64; no son instaladores para macOS/Linux.
 
 El runtime y su licencia se pueden elegir mediante `-NodePath` y
-`-NodeLicensePath`; solo se aceptan x64 y Node >=22.13. La distribución 3.9 usa
+`-NodeLicensePath`; solo se aceptan x64 y Node >=22.13. La distribución 3.10 usa
 Node 24 LTS verificado contra los checksums oficiales. Quien descarga el ZIP no
 necesita instalarlo aparte.
 
@@ -89,7 +110,10 @@ Los datos de Windows quedan en `%LOCALAPPDATA%\NexoClientes\Datos`. Para actuali
 respaldar desde la app, cerrar desde la bandeja y abrir el nuevo portable.
 Recargar la extensión instalada después del primer arranque. Para volver a la
 versión anterior, cerrar Nexo y abrir el portable anterior; no restaurar una base
-vieja encima del historial reciente. Los nuevos índices son aditivos.
+vieja encima del historial reciente. Los nuevos índices son aditivos. Después de registrar eventos `contacted`, no
+operar tandas con un runtime anterior a 3.10: esas versiones no conocen ese estado.
+Para un rollback que permita envíos hace falta conservar esta protección o
+conciliar esos contactos primero; nunca restaurar una base vieja para omitirlos.
 
 ## Alcance y próximos pasos
 

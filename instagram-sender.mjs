@@ -7,6 +7,7 @@ import path from 'node:path';
 import {spawn} from 'node:child_process';
 import net from 'node:net';
 import {DevtoolsConnection} from './browser-search.mjs';
+import {chatExpression} from './instagram-chat.mjs';
 import {otherTrade} from './web-discovery.mjs';
 
 // Chrome doesn't let other programs control the user's main window, so Nexo uses its own Chrome profile.
@@ -33,9 +34,6 @@ const ALPHABET='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_
 // Instagram's media ids start with the milliseconds since its own epoch; the post code is that id in base 64.
 export function postDate(code){let id=0n;for(const ch of String(code).slice(0,11)){const n=ALPHABET.indexOf(ch);if(n<0)return '';id=id*64n+BigInt(n);}const at=new Date(Number(id>>23n)+1314220021721);return at.getFullYear()>2011&&at-Date.now()<864e5?at.toISOString().slice(0,10):'';}
 const BOX=`document.querySelector('div[contenteditable="true"][role="textbox"]')`;
-// Text of the open conversation only: the list of chats on the left shows previews of the messages sent to other
-// accounts, and must never count as this one's.
-const PANE=`(()=>{const box=${BOX},list=document.querySelector('[aria-label="Lista de conversaciones"],[aria-label="Conversation list"],[aria-label="Thread list"]');const main=document.querySelector('[role="main"]')||document.body;if(!box){let t=main.innerText;if(list&&main.contains(list))t=t.replace(list.innerText,'');return t;}let el=box;while(el.parentElement&&el.parentElement!==document.body&&!(list&&el.parentElement.contains(list)))el=el.parentElement;return el.innerText;})()`;
 
 export class InstagramSender {
  constructor(profileDir,{store,onChange,saveExcel=async()=>{},connect=DevtoolsConnection.connect,launch=spawn,edge=findBrowser,readFile=fs.readFile,pause=[20000,40000],wait=sleep,loginWait=300,bridge=null,jobName='chromeSender'}={}){
@@ -68,10 +66,12 @@ export class InstagramSender {
   const attached=await this.client.call('Target.attachToTarget',{targetId:this.targetId,flatten:true});this.sessionId=attached.sessionId;
   await this.client.call('Page.enable',{},this.sessionId);
   // Keeps the page behaving as focused while the user works in other windows.
-  await this.client.call('Emulation.setFocusEmulationEnabled',{enabled:true},this.sessionId).catch(()=>{});
+  await this.backgroundFocus();
  }
+ async backgroundFocus(){await this.client.call('Emulation.setFocusEmulationEnabled',{enabled:true},this.sessionId);}
+ async chat(handle){return this.eval(chatExpression(handle));}
  async show(){await this.ensure();const {windowId}=await this.client.call('Browser.getWindowForTarget',{targetId:this.targetId});await this.client.call('Browser.setWindowBounds',{windowId,bounds:{windowState:'normal'}});await this.client.call('Target.activateTarget',{targetId:this.targetId});}
- async go(url){const r=await this.client.call('Page.navigate',{url},this.sessionId);if(r.errorText)throw Error('No se pudo abrir Instagram. Revisá la conexión.');for(let i=0;i<60;i++){await sleep(250);const s=await this.eval('document.readyState').catch(()=>'');if(s==='complete')break;}}
+ async go(url){const r=await this.client.call('Page.navigate',{url},this.sessionId);if(r.errorText)throw Error('No se pudo abrir Instagram. Revisá la conexión.');for(let i=0;i<60;i++){await sleep(250);const s=await this.eval('document.readyState').catch(()=>'');if(s==='complete')break;}await this.backgroundFocus();}
  async eval(expression){const r=await this.client.call('Runtime.evaluate',{expression,returnByValue:true,awaitPromise:true},this.sessionId);if(r.exceptionDetails)throw Error('Instagram cambió la página: no se pudo leer.');return r.result?.value;}
  async loggedIn(){await this.ensure();const {cookies=[]}=await this.client.call('Network.getCookies',{urls:['https://www.instagram.com/']},this.sessionId);return cookies.some(c=>c.name==='ds_user_id'&&c.value);}
  // Opens the window on Instagram so the user signs in (Nexo never sees the password).
@@ -91,7 +91,7 @@ export class InstagramSender {
  async minimize(){const {windowId}=await this.client.call('Browser.getWindowForTarget',{targetId:this.targetId});await this.client.call('Browser.setWindowBounds',{windowId,bounds:{windowState:'minimized'}});}
  async click(x,y){for(const type of ['mousePressed','mouseReleased'])await this.client.call('Input.dispatchMouseEvent',{type,x,y,button:'left',clickCount:1},this.sessionId);}
  log(item,status,note){Object.assign(item,{status,note});this.state.current='';this.emit();}
- emit(){if(this.jobName)this.store?.setJob(this.jobName,this.state);this.onChange?.(this.publicState());}
+ emit(){this.state.sent=this.state.items.filter(i=>i.status==='sent').length;this.state.skipped=this.state.items.filter(i=>['skipped','failed'].includes(i.status)).length;if(this.jobName)this.store?.setJob(this.jobName,this.state);this.onChange?.(this.publicState());}
  async delay(ms){if(this.wait!==sleep)return this.wait(ms);if(this.cancel)return;await new Promise(resolve=>{this.wake=()=>{clearTimeout(timer);this.wake=null;resolve();};const timer=setTimeout(this.wake,ms);});}
  clear(){if(this.active)throw Error('Detené la tanda antes de limpiarla.');this.state={status:'idle',total:0,sent:0,skipped:0,current:'',nextAt:0,message:'',items:[]};this.emit();}
  resume(){if(this.active)throw Error('La tanda todavía está en curso.');if(!this.state.items.some(i=>i.status==='pending'))throw Error('No hay envíos pendientes para reanudar.');this.cancel=false;this.state.status='running';this.state.message='Reanudando los pendientes…';this.launchRun();return this.publicState();}
@@ -117,8 +117,7 @@ export class InstagramSender {
    if(this.cancel)break;if(item.status!=='pending')continue;
    this.state.current=item.handle;this.state.message=`Revisando @${item.handle} (${n+1} de ${items.length})`;this.emit();
    let sent=false;
-   try{sent=await this.exclusive(()=>this.one(item));}catch(e){if(e.stopBatch){this.log(item,'failed',e.message);if(/Instagram mostró|confirmar el envío|No se abrió el chat/.test(e.message))await this.show().catch(()=>{});this.state.status='paused';this.state.message=e.message;this.emit();return;}this.log(item,'failed',e.message);}
-   if(item.status==='sent')this.state.sent++;else if(item.status!=='pending')this.state.skipped++;
+   try{sent=await this.exclusive(()=>this.one(item));}catch(e){if(e.stopBatch){this.log(item,'failed',e.message);this.state.status='paused';this.state.message=e.message;this.emit();return;}this.log(item,'failed',e.message);}
    this.emit();
    const rest=items.slice(n+1).some(i=>i.status==='pending');
    if(rest&&!this.cancel){const ms=sent?this.pause[0]+Math.random()*(this.pause[1]-this.pause[0]):3000+Math.random()*3000;this.state.status='waiting';this.state.nextAt=Date.now()+ms;this.state.message=sent?`Enviado a @${item.handle}. Próximo en ${Math.round(ms/1000)} segundos.`:`Salteado @${item.handle}. Sigue con el próximo.`;this.emit();await this.delay(ms);this.state.status='running';this.state.nextAt=0;}
@@ -132,7 +131,9 @@ export class InstagramSender {
   const block=lead&&store.gate({...lead,approved:1,qualification:''},new Date());
   if(!lead||block){this.log(item,'skipped',block||'Ya no está en la lista');return false;}
   if(lead.message!==item.message)throw Object.assign(Error('La propuesta cambió. Revisá la tanda antes de enviar.'),{stopBatch:true});
-  const p=await this.read(item.handle);
+  let activity={};try{activity=JSON.parse(lead.activity||'{}');}catch{}
+  const fresh=activity.source==='profile'&&Date.now()-Date.parse(activity.checkedAt)>=0&&Date.now()-Date.parse(activity.checkedAt)<864e5;
+  const p=fresh?{title:lead.name,dates:null}:await this.read(item.handle);
   if(p.warning)throw Object.assign(Error('Instagram mostró un aviso. Se pausó la tanda: revisá la ventana de Nexo antes de seguir.'),{stopBatch:true});
   if(p.missing){store.update(item.id,{dnc:true});this.log(item,'skipped','La cuenta ya no existe');return false;}
   if(/hotel|resort|posada|hostal|apart/i.test(store.settings().segment)&&otherTrade({title:p.title,url:`https://www.instagram.com/${item.handle}/`})){store.update(item.id,{dnc:true});this.log(item,'skipped','No es un alojamiento: '+p.title.slice(0,60));return false;}
@@ -140,17 +141,24 @@ export class InstagramSender {
   else{let checked=false;try{checked=['profile','user'].includes(JSON.parse(lead.activity||'{}').source);}catch{}if(!checked){this.log(item,'skipped','No se pudieron leer sus publicaciones');return false;}}
   this.state.message=`Escribiendo a @${item.handle}`;this.emit();
   await this.go(`https://ig.me/m/${item.handle}`);
-  let b=null;for(let i=0;i<50&&!b;i++){await sleep(400);const pane=await this.eval(PANE).catch(()=>'');if(WARNING.test(pane))throw Object.assign(Error('Instagram mostró un aviso. Se pausó la tanda: revisá la ventana de Nexo antes de seguir.'),{stopBatch:true});
-   // First visit to the inbox: Instagram asks about notifications.
+  let chat=null,b=null,stable=0,last='';
+  // A bounded read of this conversation, once per unknown recipient. Positive results are cached in SQLite.
+  for(let i=0;i<25;i++){
+   if(this.cancel)return false;
+   await this.delay(400);
    await this.eval(`(()=>{const b=[...document.querySelectorAll('[role="dialog"] button')].find(x=>/^(Ahora no|Not Now)$/i.test(x.innerText.trim()));if(b)b.click();})()`).catch(()=>{});
-   b=await this.box();}
-  // Only once the chat finished loading without a text box does it count as an account that doesn't accept messages.
-  if(!b){const pane=await this.eval(PANE).catch(()=>'');if(CANT_RECEIVE.test(pane)){store.update(item.id,{dnc:true});this.log(item,'skipped','La cuenta no acepta mensajes');return false;}this.log(item,'skipped','No se abrió el chat');return false;}
-  const message=String(item.message||'').replace(/\r/g,''),probe=flat(message).slice(0,40);
-  const before=flat(await this.eval(PANE));
-  if(!before.toLowerCase().includes(item.handle.toLowerCase()))throw Object.assign(Error(`No se abrió el chat de @${item.handle}. Se pausó la tanda sin enviar nada.`),{stopBatch:true});
-  // Never twice: if the chat already shows the proposal, it was sent earlier (by hand, for example).
-  if(probe&&before.replace(flat(b.text),'').includes(probe)){const e=store.reserve(item.id);store.finish(e.event,'sent','Ya figuraba en el chat');this.log(item,'sent','Ya figuraba enviado en el chat');await this.saveExcel().catch(()=>{});return false;}
+   chat=await this.chat(item.handle);
+   if(WARNING.test(chat.text))throw Object.assign(Error('Instagram mostró un aviso. Se pausó la tanda: revisá el navegador desde Nexo.'),{stopBatch:true});
+   if(chat.identity&&chat.hasMessages){store.rememberContact(item.id);this.log(item,'skipped','Ya tiene una conversación en Instagram. Guardado en Enviados; no se volvió a escribir.');await this.saveExcel().catch(()=>{});return false;}
+   if(chat.identity&&CANT_RECEIVE.test(chat.text)){this.log(item,'skipped','La cuenta no acepta mensajes');return false;}
+   b=await this.box();
+   const signature=JSON.stringify([chat.identity,chat.ready,chat.messages,chat.text]);
+   stable=signature===last?stable+1:0;last=signature;
+   if(chat.identity&&chat.ready&&b&&stable>=4)break;
+  }
+  if(!chat?.identity||!chat.ready||!b||stable<4){this.log(item,'skipped','No se pudo verificar que el chat esté vacío. Revisá la cuenta antes de reintentar.');return false;}
+  const message=String(item.message||'').replace(/\r/g,''),probe=flat(message);
+  await this.backgroundFocus();
   if(flat(b.text)){await this.click(b.x,b.y);await this.client.call('Input.dispatchKeyEvent',{type:'keyDown',key:'a',code:'KeyA',windowsVirtualKeyCode:65,modifiers:2},this.sessionId);await this.client.call('Input.dispatchKeyEvent',{type:'keyUp',key:'a',code:'KeyA',windowsVirtualKeyCode:65,modifiers:2},this.sessionId);await this.client.call('Input.dispatchKeyEvent',{type:'keyDown',key:'Delete',code:'Delete',windowsVirtualKeyCode:46},this.sessionId);await this.client.call('Input.dispatchKeyEvent',{type:'keyUp',key:'Delete',code:'Delete',windowsVirtualKeyCode:46},this.sessionId);}
   await this.click(b.x,b.y);
   const lines=message.split('\n');
@@ -159,12 +167,15 @@ export class InstagramSender {
   const draft=await this.box();
   if(!draft||flat(draft.text)!==flat(message))throw Object.assign(Error(`El mensaje para @${item.handle} no se pegó completo. Se pausó la tanda sin enviarlo.`),{stopBatch:true});
   if(this.cancel){item.note='Pendiente: tanda detenida antes de enviar';return false;}
+  const finalChat=await this.chat(item.handle);
+  if(!finalChat.identity||!finalChat.ready)throw Object.assign(Error('El chat cambió antes de enviar. Revisá el destinatario.'),{stopBatch:true});
+  if(finalChat.hasMessages){store.rememberContact(item.id);this.log(item,'skipped','Conversación previa detectada antes de enviar; no se volvió a escribir.');await this.saveExcel().catch(()=>{});return false;}
   const event=store.reserve(item.id);
   try{
   await this.key(0);
-  for(let i=0;i<30;i++){await sleep(500);const now=await this.box().catch(()=>null);const text=flat(await this.eval(PANE).catch(()=>''));
+  for(let i=0;i<30;i++){await sleep(500);const now=await this.box().catch(()=>null);const confirmation=await this.chat(item.handle).catch(()=>null),text=confirmation?.text||'';
    if(WARNING.test(text)){store.finish(event.event,'uncertain','Instagram mostró un aviso al enviar');throw Object.assign(Error('Instagram mostró un aviso al enviar. Se pausó la tanda: revisá la ventana de Nexo.'),{stopBatch:true});}
-   if(now&&!flat(now.text)&&text.includes(probe)){store.finish(event.event,'sent','Enviado por Nexo');this.log(item,'sent','Enviado');await this.saveExcel().catch(()=>{});return true;}}
+   if(now&&!flat(now.text)&&confirmation?.identity&&confirmation.messages.some(t=>flat(t)===probe)){store.finish(event.event,'sent','Enviado por Nexo');this.log(item,'sent','Enviado');await this.saveExcel().catch(()=>{});return true;}}
   // The text left the box but didn't show up: counts as contacted so it's never sent twice; the user checks it.
   store.finish(event.event,'uncertain','No se pudo confirmar en el chat');throw Object.assign(Error(`No se pudo confirmar el envío a @${item.handle}. Se pausó la tanda: fijate en la ventana de Nexo si salió.`),{stopBatch:true});
   }catch(e){const status=store.db.prepare('SELECT status FROM events WHERE id=?').get(event.event)?.status;if(status==='pending')store.finish(event.event,'uncertain','Conexión interrumpida después de preparar el envío');e.stopBatch=true;throw e;}

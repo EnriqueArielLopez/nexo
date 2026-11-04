@@ -1,4 +1,4 @@
-NEXO · CLIENTES 3.9.1
+NEXO · CLIENTES 3.10.0
 
 INSTALAR EN WINDOWS
 1. Descargá Nexo-Windows-portable.zip desde:
@@ -43,8 +43,8 @@ mensaje. Marcá a quién contactar y continuá al paso 3.
 3 · ENVIAR Y SEGUIR TRABAJANDO
 Revisá destinatarios y mensajes antes de confirmar.
 Instagram trabaja en una ventana minimizada, con pausas entre mensajes.
-Podés usar otras aplicaciones. Solo vuelve al frente para iniciar sesión
-o revisar un problema. No cierres la ventana de Chrome que usa Nexo.
+Podés usar otras aplicaciones. Solo vuelve al frente para iniciar sesión. Los errores se informan en Nexo sin traer Chrome al frente.
+No cierres la ventana de Chrome que usa Nexo.
 La barra de Chrome que informa que Nexo depura el navegador es normal.
 Los emails también se envían en segundo plano; configurá tu casilla en
 Ajustes. El progreso queda visible arriba en Nexo.
@@ -68,3 +68,17 @@ Cada persona conecta su propio Chrome y configura su propio email.
 Los cupos son internos y no garantizan evitar restricciones de Instagram.
 Respetá las bajas. No se reintenta automáticamente un envío incierto.
 La integración oficial de Meta es opcional y requiere configuración propia.
+
+NO VOLVER A ESCRIBIR A LA MISMA CUENTA
+
+Nexo conserva siempre sus envíos y las conversaciones previas que detecta.
+Si el chat ya tiene un mensaje (incluso distinto de la propuesta o multimedia),
+no envía. Queda en Enviados como "Conversación previa", con fecha de detección,
+y no consume el cupo de hoy. En próximas tandas se omite desde el historial local,
+sin abrir esa cuenta otra vez. Cambiar la propuesta o limpiar resultados no borra
+esta protección. No se recorre toda tu bandeja: se comprueba cada chat desconocido.
+Si el chat no termina de cargar, se omite y se muestra el motivo en la tanda.
+
+Después de actualizar, recargá la extensión para usar la versión 1.2.
+No hagas envíos con versiones anteriores a 3.10 después de usar esta versión:
+no reconocen el nuevo registro de conversaciones previas. Conservá tu historial.
