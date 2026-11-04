@@ -2,6 +2,9 @@
 
 Fecha: 2026-11-03, Argentina. Revisión base: `8710f0f`.
 
+La corrección posterior de ingreso y la actualización instalada a 3.9.1 están
+registradas en [VALIDACION-3.9.1.md](VALIDACION-3.9.1.md).
+
 ## Alcance
 
 Trabajo sobre una rama feature desde `main`. Nexo es una aplicación Windows
