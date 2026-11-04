@@ -1,4 +1,4 @@
-# Nexo · Clientes 3.9
+# Nexo · Clientes 3.9.1
 
 Buscá negocios para tu oferta, revisá sus perfiles y prepará propuestas. Los envíos
 trabajan en segundo plano para que puedas seguir usando la computadora.
@@ -20,6 +20,10 @@ la descarga con `Get-FileHash -Algorithm SHA256`.
 
 ## Qué cambia
 
+- **Ingreso más claro:** el bloqueo de cinco intentos fallidos conserva sus 15
+  minutos de espera y reinicia el contador al vencer. La pantalla muestra cuánto
+  falta, evita reintentos mientras espera y permite mostrar la contraseña para
+  revisar errores de escritura.
 - **Búsqueda rápida:** 20 candidatos por defecto, con objetivos de 50/100 y alcance
   ampliado opcionales. La lectura de perfiles durante la búsqueda es optativa.
   Los candidatos rápidos quedan **para revisar**: no se afirma que sean inactivos.

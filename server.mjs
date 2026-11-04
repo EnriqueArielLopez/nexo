@@ -26,7 +26,7 @@ import {exportWorkbook} from './export-portable.mjs';
 import {NexoAssistant,campaignContext,connectionRequest} from './assistant.mjs';
 import {emailLead,sendMail,attachmentDir,ATTACHMENT_TYPES} from './mailer.mjs';
 import {runSchedules} from './scheduler.mjs';
-const BUILD='3.9.0';
+const BUILD='3.9.1';
 const root=path.dirname(fileURLToPath(import.meta.url));
 const data=path.resolve(process.env.HOTEL_DATA_DIR||path.join(root,'data'));
 const port=Number(process.env.PORT||18761),origin=`http://127.0.0.1:${port}`;
@@ -159,7 +159,7 @@ try{const route=new URL(req.url,origin).pathname;
   default:return json(res,{error:'No encontrado'},404);
  }
  return json(res,{ok:true,state:state(c)});
-}catch(e){if(!res.headersSent)json(res,{error:e.message||'No se pudo completar la acción.'},400);else res.end();}});
+}catch(e){if(!res.headersSent){if(e.code==='LOGIN_LOCKED'){res.setHeader('Retry-After',String(e.retryAfterSeconds));json(res,{error:e.message,code:e.code,retryAt:e.retryAt,retryAfterSeconds:e.retryAfterSeconds},429);}else json(res,{error:e.message||'No se pudo completar la acción.'},400);}else res.end();}});
 const background=new Map();let scheduling=false;
 async function scheduleTarget(u){const c=contexts.get(u.id);if(c&&c.ready){await c.ready;return {store:c.store,dir:c.dir,secret:c.secret,save:()=>excel(c)};}let t=background.get(u.id);if(!t){const dir=accounts.folder(u);t={store:new Store(dir),dir,secret:{},at:0};background.set(u.id,t);}if(Date.now()-t.at>300000){t.at=Date.now();const saved=accounts.saved(u.id);try{t.secret=saved?await vault('open',saved):{};}catch{t.secret={};}}return {...t,save:()=>exportWorkbook({generated:new Date().toISOString(),settings:t.store.settings(),leads:t.store.list(),history:t.store.history()},path.join(t.dir,'Clientes.xlsx')).catch(()=>{})};}
 const scheduler=setInterval(async()=>{if(stopping||scheduling)return;scheduling=true;try{for(const u of accounts.db.prepare('SELECT id,name,legacy FROM users').all()){if(stopping)break;try{const t=await scheduleTarget(u);const s=t.store.settings();await runSchedules({store:t.store,dir:t.dir,smtp:{host:s.smtpHost,port:s.smtpPort,user:s.smtpUser,pass:t.secret.smtpPass||''},onSent:t.save});}catch(e){console.error('Programados:',e.message);}}}finally{scheduling=false;}},20000);scheduler.unref();
