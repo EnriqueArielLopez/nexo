@@ -71,7 +71,9 @@ una base antigua sobre el historial reciente.
 
 ## Entrega
 
-Código y documentación preparados en rama para revisión por PR. ZIP verificado:
+Código y documentación subidos para revisión en el
+[PR #4](https://github.com/EnriqueArielLopez/nexo/pull/4), commit de código
+`28513ee`. La rama remota queda conservada hasta integrar y validar main. ZIP verificado:
 52 entradas, 44 archivos de la aplicación coincidentes por SHA-256 con el código
 probado; sin bases, perfiles, tokens ni archivos de QA. SHA-256 del ZIP:
 `b642b04c7e4e4c146a93c6e182da8c9a8fa17eefe14056a38fba9bbd6e7af2c4`. Portable de
