@@ -9,13 +9,38 @@ import {setTimeout as delay} from 'node:timers/promises';
 import {fileURLToPath} from 'node:url';
 import {Accounts} from './auth.mjs';
 import {Store} from './core.mjs';
+import {unzip} from './zip.mjs';
+
+test('primera instalación: crear espacio, entrar, usar ejemplos y conservar sesión sin configuración privada',async t=>{
+ const dir=mkdtempSync(path.join(os.tmpdir(),'nexo-first-run-'));
+ const listener=net.createServer();await new Promise(r=>listener.listen(0,'127.0.0.1',r));
+ const port=listener.address().port;await new Promise(r=>listener.close(r));
+ const origin='http://127.0.0.1:'+port;
+ const child=spawn(process.execPath,['--disable-warning=ExperimentalWarning','server.mjs'],{cwd:fileURLToPath(new URL('.',import.meta.url)),env:{...process.env,PORT:String(port),HOTEL_DATA_DIR:dir},windowsHide:true,stdio:'pipe'});
+ let stderr='';child.stderr.on('data',v=>stderr+=v);child.stdout.resume();
+ t.after(async()=>{const closed=new Promise(r=>child.once('exit',r));if(child.exitCode===null){child.kill();await closed;}rmSync(dir,{recursive:true,force:true});});
+ let ready=false;for(let i=0;i<100;i++){if(child.exitCode!==null)throw Error(stderr);try{ready=(await fetch(origin+'/api/health')).ok;if(ready)break;}catch{}await delay(50);}assert.equal(ready,true,stderr);
+ const session=await(await fetch(origin+'/api/session')).json();assert.equal(session.hasAccounts,false);
+ const register=await fetch(origin+'/api/register',{method:'POST',headers:{origin,'content-type':'application/json','x-csrf-token':session.csrf},body:JSON.stringify({name:'Espacio Ficticio',password:'clave-ficticia-310',remember:true})});
+ assert.equal(register.status,200);const cookie=register.headers.get('set-cookie').split(';')[0];
+ const headers={cookie,origin,'content-type':'application/json','x-csrf-token':session.csrf};
+ const post=(route,body={})=>fetch(origin+'/api/'+route,{method:'POST',headers,body:JSON.stringify(body)});
+ let state=await(await fetch(origin+'/api/state',{headers:{cookie}})).json();
+ assert.equal(state.user.name,'Espacio Ficticio');assert.equal(state.leads.length,0);assert.equal(state.chromeConnected,false);assert.equal(state.email.configured,false);
+ assert.equal((await post('demo')).status,200);
+ state=await(await fetch(origin+'/api/state',{headers:{cookie}})).json();assert.equal(state.leads.length,3);assert.ok(state.leads.every(l=>l.demo));assert.equal(state.history.length,0);
+ const font=await fetch(origin+'/fonts/Manrope-600.ttf');assert.equal(font.status,200);assert.ok((await font.arrayBuffer()).byteLength>10000);
+ assert.equal((await(await fetch(origin+'/api/session',{headers:{cookie}})).json()).user.name,'Espacio Ficticio');
+ assert.equal((await post('logout')).status,200);
+ assert.equal((await fetch(origin+'/api/state',{headers:{cookie}})).status,401);
+});
 
 test('HTTP real: acceso, planilla grande, edición, limpieza, restauración y Excel',async t=>{
  const dir=mkdtempSync(path.join(os.tmpdir(),'nexo-http-'));
  const accounts=new Accounts(dir);accounts.create('QA FICTICIO','qa-sin-datos-reales');accounts.close();
  const store=new Store(dir);store.saveSettings({daily:100});
  for(let i=0;i<1200;i++)store.add({handle:'http_qa_'+i,name:'FICTICIO '+i,language:'es',source:'https://example.com',email:`qa${i}@example.com`});
- const protectedId=store.list()[0].id;store.update(protectedId,{approved:true});const event=store.reserve(protectedId);store.finish(event.event,'sent','QA, sin envío externo');store.close();
+ const protectedId=store.list()[0].id;store.update(protectedId,{approved:true});const event=store.reserve(protectedId);store.finish(event.event,'sent','QA, sin envío externo');const previousId=protectedId-1;store.rememberContact(previousId);store.close();
  const listener=net.createServer();await new Promise(r=>listener.listen(0,'127.0.0.1',r));const port=listener.address().port;await new Promise(r=>listener.close(r));
  const origin='http://127.0.0.1:'+port;
  const child=spawn(process.execPath,['--disable-warning=ExperimentalWarning','server.mjs'],{cwd:fileURLToPath(new URL('.',import.meta.url)),env:{...process.env,PORT:String(port),HOTEL_DATA_DIR:dir},windowsHide:true,stdio:'pipe'});
@@ -29,17 +54,19 @@ test('HTTP real: acceso, planilla grande, edición, limpieza, restauración y Ex
  const post=async(route,body={})=>{const r=await fetch(origin+'/api/'+route,{method:'POST',headers,body:JSON.stringify(body)});return {status:r.status,body:await r.json()};};
  const before=performance.now(),r=await fetch(origin+'/api/state',{headers:{cookie}}),state=await r.json();
  t.diagnostic(`Estado con 1200 clientes: ${Math.round(performance.now()-before)} ms`);
- assert.equal(state.leads.length,1200);assert.equal(state.build,'3.9.1');assert.equal(state.history.length,1);
+ assert.equal(state.leads.length,1200);assert.equal(state.build,'3.10.0');assert.equal(state.history.length,2);assert.equal(state.leads.find(l=>l.id===previousId).eventStatus,'contacted');assert.equal(state.counts.daily,1);
  assert.equal((await fetch(origin+'/api/update',{method:'POST',headers:{cookie,'content-type':'application/json'},body:'{}'})).status,403);
  assert.equal((await fetch(origin+'/api/state',{headers:{cookie,origin:'https://example.com'}})).status,403);
  const id=state.leads.find(l=>!l.eventStatus).id;
  assert.equal((await post('update',{id,message:'Borrador QA conservado'})).status,200);
+ const preview=await post('batch/preview',{ids:[id],channel:'instagram'});assert.equal(preview.status,200);assert.equal(preview.body.items[0].message,'Borrador QA conservado');
+ const backup=await(await fetch(origin+'/api/backup',{headers:{cookie}})).json();assert.ok(backup.history.some(e=>e.status==='contacted'));assert.equal(backup.leads.find(l=>l.id===id).message_custom,1);
  assert.equal((await post('ig/send',{ids:[id]})).status,400,'no envía sin confirmación');
  assert.equal((await post('ig/send',{ids:[id],confirm:true,token:'incorrecto'})).status,400,'no envía con vista previa distinta');
  assert.equal((await post('search',{seed:'incorrecto'})).status,400,'no limpia si el perfil es inválido');
- const cleared=await post('results/clear');assert.equal(cleared.body.archived,1199);assert.equal(cleared.body.state.leads.length,1);assert.equal(cleared.body.state.history.length,1);
+ const cleared=await post('results/clear');assert.equal(cleared.body.archived,1198);assert.equal(cleared.body.state.leads.length,2);assert.equal(cleared.body.state.history.length,2);
  const restored=await post('results/restore');assert.equal(restored.body.state.leads.length,1200);assert.equal(restored.body.state.leads.find(l=>l.id===id).message,'Borrador QA conservado');
- const excel=await fetch(origin+'/api/excel',{headers:{cookie}});assert.equal(excel.status,200);const bytes=new Uint8Array(await excel.arrayBuffer());assert.deepEqual([...bytes.slice(0,2)],[80,75]);
+ const excel=await fetch(origin+'/api/excel',{headers:{cookie}});assert.equal(excel.status,200);const bytes=new Uint8Array(await excel.arrayBuffer());assert.deepEqual([...bytes.slice(0,2)],[80,75]);assert.match(unzip(Buffer.from(bytes)).get('xl/worksheets/sheet1.xml').toString(),/Conversación previa · sin nuevo envío/);
  assert.equal((await post('logout')).status,200);assert.equal((await fetch(origin+'/api/state',{headers:{cookie}})).status,401);
  const attempt=password=>fetch(origin+'/api/login',{method:'POST',headers:{origin,'content-type':'application/json','x-csrf-token':session.csrf},body:JSON.stringify({name:'QA FICTICIO',password})});
  for(let i=0;i<4;i++){const failed=await attempt('incorrecta');assert.equal(failed.status,400);assert.equal(failed.headers.get('set-cookie'),null);}

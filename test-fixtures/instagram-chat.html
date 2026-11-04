@@ -1,0 +1,31 @@
+<!doctype html><html lang="es"><meta charset="utf-8"><title>Pruebas DOM de conversaciones · Nexo</title>
+<script type="module">
+import {readInstagramChat} from '/instagram-chat.mjs';
+const results=[];
+const link='<a href="https://www.instagram.com/hotel_test/">Hotel Test</a>';
+const composer='<div contenteditable="true" role="textbox"></div>';
+const check=(name,markup,expected)=>{
+ document.body.innerHTML=markup;
+ const got=readInstagramChat('hotel_test');
+ const pass=Object.entries(expected).every(([k,v])=>JSON.stringify(got[k])===JSON.stringify(v));
+ results.push({name,pass,...(!pass?{got,expected}:{})});
+};
+const layout=inside=>`<main><aside aria-label="Conversation list"><a href="https://www.instagram.com/otra_cuenta/">Otra cuenta</a><div role="row">La propuesta que se envió a otra persona</div></aside><section>${link}${inside}</section></main>`;
+check('Chat vacío; el mensaje de la barra lateral no cuenta',layout('<div role="grid"></div>'+composer),{identity:true,ready:true,hasMessages:false});
+check('Una propuesta distinta también impide reenviar',layout('<div role="grid"><div role="row">Un texto viejo diferente</div></div>'+composer),{identity:true,hasMessages:true,messages:['Un texto viejo diferente']});
+check('Separa el cuerpo del mensaje de su hora y sus controles',layout('<div role="grid"><div role="row"><span>10:45</span><div dir="auto">Propuesta de ejemplo</div><button>Responder</button></div></div>'+composer),{hasMessages:true,messages:['10:45 Propuesta de ejemplo Responder','Propuesta de ejemplo']});
+check('Una foto previa también cuenta',layout('<div role="grid"><div role="row"><img alt="Foto" src="data:," /></div></div>'+composer),{hasMessages:true});
+check('El borrador no es un mensaje previo',layout('<div role="grid"></div>'+composer.replace('></div>','>Borrador sin enviar</div>')),{hasMessages:false,draft:'Borrador sin enviar'});
+check('La tarjeta inicial del perfil no es un mensaje',layout(`<div role="grid"><div role="row">${link}<button>Ver perfil</button></div></div>${composer}`),{hasMessages:false,ready:true});
+check('No confunde el destinatario con un perfil en el lateral',`<main><aside aria-label="Conversation list">${link}</aside><section><a href="https://www.instagram.com/hotel_otro/">Otro hotel</a><div role="grid"></div>${composer}</section></main>`,{identity:false,ready:false});
+check('Un enlace al perfil dentro de otro mensaje no prueba el destinatario',`<main><section><a href="https://www.instagram.com/hotel_otro/">Otro hotel</a><div role="grid"><div role="row">Mirá este negocio: ${link}</div></div>${composer}</section></main>`,{identity:false,ready:false});
+check('Acepta el enlace del perfil sin barra final',layout('<div role="grid"></div>'+composer).replace('hotel_test/','hotel_test'),{identity:true,ready:true});
+check('Un historial que sigue cargando no autoriza envío',layout('<div role="grid" aria-busy="true"></div>'+composer),{identity:true,ready:false});
+check('Una invitación previa sin editor sigue siendo conversación',layout('<div role="grid"><div role="row">Invitación enviada</div></div>'),{identity:true,hasMessages:true});
+check('Una estructura desconocida requiere revisión',layout(composer),{identity:true,ready:false});
+document.body.innerHTML='<main style="font:16px/1.7 system-ui;max-width:850px;margin:40px auto"><h1>Conversaciones de Instagram</h1><p id="summary"></p><ol id="results"></ol></main>';
+document.querySelector('#summary').textContent=`${results.filter(r=>r.pass).length}/${results.length} pruebas correctas. Sin conexión a Instagram ni envíos.`;
+for(const result of results){const li=document.createElement('li');li.textContent=(result.pass?'✓ ':'ERROR ')+result.name;document.querySelector('#results').append(li);}
+document.body.dataset.passed=String(results.every(r=>r.pass));
+window.testResults=results;
+</script></html>

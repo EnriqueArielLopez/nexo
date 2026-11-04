@@ -8,7 +8,7 @@ export function prepareBatch(store,ids,channel='instagram',{eligibility}={}){
  for(const lead of store.list().filter(l=>selected.has(l.id))){
   if(lead.demo||lead.eventStatus||lead.dnc){skipped.push({id:lead.id,reason:'Ya contactado, envío pendiente, baja o ejemplo'});continue;}
   const external=eligibility?.(lead);if(external){skipped.push({id:lead.id,reason:external});continue;}
-  const message=personalize(settings.template,lead,settings),block=store.gate({...lead,message,approved:1,qualification:''},new Date(),false,'',channel);
+  const message=lead.message_custom?lead.message:personalize(settings.template,lead,settings),block=store.gate({...lead,message,approved:1,qualification:''},new Date(),false,'',channel);
   if(block&&!/Cupo/.test(block)){skipped.push({id:lead.id,reason:block});continue;}
   if(items.length>=limit){skipped.push({id:lead.id,reason:'Queda para otra tanda por el cupo disponible'});continue;}
   items.push({...lead,message});
@@ -16,4 +16,4 @@ export function prepareBatch(store,ids,channel='instagram',{eligibility}={}){
  const token=createHash('sha256').update(JSON.stringify([channel,items.map(l=>[l.id,l.message,l.email,l.score]),settings.attachment,settings.emailSubject])).digest('hex');
  return {channel,selected:ids.length,limit,items,skipped,token};
 }
-export function approveBatch(store,batch){for(const lead of batch.items)store.update(lead.id,{message:lead.message,qualificationReviewed:true,approved:true});}
+export function approveBatch(store,batch){for(const lead of batch.items)store.update(lead.id,{message:lead.message,messageCustom:lead.message_custom===1,qualificationReviewed:true,approved:true});}

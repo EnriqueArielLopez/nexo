@@ -13,7 +13,7 @@ if (Test-Path -LiteralPath $outputFull) { throw "El destino ya existe: $outputFu
 $appFolder=Join-Path $outputFull 'app'
 $binFolder=Join-Path $outputFull 'bin'
 New-Item -ItemType Directory -Path $appFolder,$binFolder | Out-Null
-foreach($name in @('server.mjs','core.mjs','geography.mjs','providers.mjs','export-portable.mjs','zip.mjs','package.json','auth.mjs','automation.mjs','imports.mjs','research.mjs','vault.mjs','qualification.mjs','assistant.mjs','campaign.mjs','web-discovery.mjs','browser-search.mjs','prospecting.mjs','website-prospects.mjs','templates.mjs','batches.mjs','instagram-connection.mjs','instagram-test.mjs','instagram-batch.mjs','mcp.mjs','conectar-claude.mjs','mailer.mjs','scheduler.mjs','instagram-sender.mjs','extension-bridge.mjs','email-queue.mjs')) { Copy-Item -LiteralPath (Join-Path $PSScriptRoot $name) -Destination $appFolder }
+foreach($name in @('server.mjs','core.mjs','geography.mjs','providers.mjs','export-portable.mjs','zip.mjs','package.json','auth.mjs','automation.mjs','imports.mjs','research.mjs','vault.mjs','qualification.mjs','assistant.mjs','campaign.mjs','web-discovery.mjs','browser-search.mjs','prospecting.mjs','website-prospects.mjs','templates.mjs','batches.mjs','instagram-connection.mjs','instagram-test.mjs','instagram-batch.mjs','mcp.mjs','conectar-claude.mjs','mailer.mjs','scheduler.mjs','instagram-sender.mjs','instagram-chat.mjs','extension-bridge.mjs','email-queue.mjs')) { Copy-Item -LiteralPath (Join-Path $PSScriptRoot $name) -Destination $appFolder }
 if(Test-Path -LiteralPath (Join-Path $PSScriptRoot 'instagram-public-config.json')){Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'instagram-public-config.json') -Destination $appFolder}
 $instagramServiceFolder=Join-Path $outputFull 'servicio-instagram'
 New-Item -ItemType Directory -Path $instagramServiceFolder | Out-Null
@@ -37,10 +37,16 @@ Add-Type -AssemblyName System.Drawing
 $bitmap=New-Object System.Drawing.Bitmap 64,64
 $graphics=[Drawing.Graphics]::FromImage($bitmap)
 $graphics.SmoothingMode=[Drawing.Drawing2D.SmoothingMode]::AntiAlias
-$graphics.Clear([Drawing.Color]::FromArgb(120,85,232))
+$graphics.Clear([Drawing.Color]::FromArgb(69,105,221))
 $iconFont=New-Object Drawing.Font 'Segoe UI',40,([Drawing.FontStyle]::Bold)
 $brush=New-Object Drawing.SolidBrush ([Drawing.Color]::White)
-$graphics.DrawString('n',$iconFont,$brush,6,-7)
+$brandPen=New-Object Drawing.Pen ([Drawing.Color]::White),5
+$brandPen.StartCap=[Drawing.Drawing2D.LineCap]::Round
+$brandPen.EndCap=[Drawing.Drawing2D.LineCap]::Round
+$brandPen.LineJoin=[Drawing.Drawing2D.LineJoin]::Round
+$brandPoints=[Drawing.Point[]]@((New-Object Drawing.Point 16,48),(New-Object Drawing.Point 16,19),(New-Object Drawing.Point 22,14),(New-Object Drawing.Point 28,14),(New-Object Drawing.Point 48,49),(New-Object Drawing.Point 48,19),(New-Object Drawing.Point 44,14),(New-Object Drawing.Point 40,14))
+$graphics.DrawLines($brandPen,$brandPoints)
+$brandPen.Dispose()
 $icon=[Drawing.Icon]::FromHandle($bitmap.GetHicon())
 $iconPath=Join-Path $PSScriptRoot 'build\nexo.ico'
 $stream=[IO.File]::Create($iconPath)
