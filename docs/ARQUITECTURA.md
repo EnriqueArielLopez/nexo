@@ -15,8 +15,11 @@ El ingreso admite cinco fallos por nombre normalizado y bloquea por 15 minutos.
 Los intentos durante el bloqueo no prolongan su vencimiento; una vez vencido se
 reinicia el contador. El bloqueo responde HTTP 429 con `Retry-After` y su fecha
 de vencimiento. La UI muestra el tiempo restante y no reintenta automáticamente.
-Los contadores son en memoria, como en versiones anteriores; no hay cambios de
-credenciales, cookies, sesiones ni esquema de la base por esta corrección.
+Desde 3.11 los contadores persisten en `login_attempts` y `auth_windows`; hay
+límites globales por instalación de 20 accesos y 10 registros por minuto.
+Las contraseñas usan scrypt N=16384/r=8/p=5, identificadas con `v2:`. Las
+anteriores se verifican con su costo original y se migran tras un acceso válido.
+No operar esta base con versiones anteriores después de migrar.
 
 ## Datos y rendimiento
 
@@ -150,3 +153,21 @@ Pendientes: firma de ejecutables, instalador/actualizador y publicación de la
 extensión en una tienda. La instalación de la extensión sigue siendo manual por
 persona; no se distribuye el token de una instalación existente. Validar envíos
 con la cuenta real y destinatarios revisados antes de operar una campaña.
+
+## Seguridad 3.11
+
+El cierre requiere sesión o el token privado de `.shutdown-token`, renovado al
+arrancar y leído por el lanzador; no se sirve por HTTP. La extensión 1.3 limita
+comandos, verifica ventana/URL y devuelve presencia de sesión sin cookies reales.
+La lectura pública fija DNS al socket y vuelve a validar redirecciones. SMTP
+valida sobres/encabezados y exige TLS, y el cambio de destino exige la clave.
+Importaciones verifican ZIP y limitan filas/columnas/celdas.
+
+MCP no abre DPAPI ni ofrece envíos o programación: el usuario confirma en Nexo.
+Con varios espacios exige NEXO_USUARIO; el instalador pregunta cuál conectar.
+El acceso del conector sigue siendo un permiso de lectura/escritura de contactos
+para una aplicación externa bajo el mismo usuario de Windows.
+
+Ver [SECURITY.md](../SECURITY.md), [PRIVACIDAD.md](../PRIVACIDAD.md) y
+[validación 3.11](VALIDACION-3.11.md). No modifica infraestructura de Practical
+Solutions ni requiere despliegue en Development/Producción.

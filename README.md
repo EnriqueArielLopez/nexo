@@ -1,11 +1,11 @@
-# Nexo · Clientes 3.10.0
+# Nexo · Clientes 3.11.0
 
 Buscá negocios para tu oferta, revisá sus perfiles y prepará propuestas. Los envíos
 trabajan en segundo plano para que puedas seguir usando la computadora.
 
 ## Descargar y empezar (Windows)
 
-1. Descargá [Nexo para Windows x64](https://github.com/EnriqueArielLopez/nexo/releases/download/v3.10.0/Nexo-Windows-portable.zip).
+1. Descargá [Nexo para Windows x64](https://github.com/EnriqueArielLopez/nexo/releases/download/v3.11.0/Nexo-Windows-portable.zip).
    También está en la [última versión](https://github.com/EnriqueArielLopez/nexo/releases/latest).
 2. Extraé todo el ZIP en una carpeta fija y abrí **Nexo.exe**.
 3. Creá tu cuenta local. Para buscar, completá tu Instagram, oferta y filtros.
@@ -22,7 +22,18 @@ la descarga con `Get-FileHash -Algorithm SHA256`.
 
 *Vista de ejemplo con datos ficticios.*
 
-## Qué cambia
+## Seguridad de 3.11
+
+Refuerza acceso local, contraseñas, archivos importados, SMTP, consultas de red y
+permisos de la extensión. El conector de Claude puede investigar y preparar;
+los envíos de email y su programación se confirman desde Nexo. El conector ya no
+abre credenciales y exige elegir un espacio cuando hay varios.
+
+Leé [Seguridad](SECURITY.md), [Datos y uso responsable](PRIVACIDAD.md) y
+[Validación de 3.11](docs/VALIDACION-3.11.md). El programa reduce riesgos técnicos;
+no certifica cumplimiento legal ni garantiza ausencia de incidentes.
+
+## Funciones de la aplicación
 
 - **No repetir contactos:** además del historial de Nexo, comprueba si el chat del
   destinatario ya tiene mensajes, aunque el texto anterior sea diferente o sea
@@ -33,7 +44,7 @@ la descarga con `Get-FileHash -Algorithm SHA256`.
   destinatario desconocido, separa la conversación del listado lateral y espera
   que termine de cargar. Si no puede comprobar el destinatario o la carga, lo
   omite con un motivo visible. Reutiliza actividad del perfil de las últimas 24 h.
-- **Chrome en segundo plano:** la extensión 1.2 crea la ventana ya minimizada y
+- **Chrome en segundo plano:** la extensión 1.3 crea la ventana ya minimizada y
   recupera la emulación de foco cuando se reconecta. Los errores pausan o se
   informan en Nexo; no traen Chrome al frente. El login sí requiere intervención.
 - **Nuevo escritorio:** identidad visual propia, navegación lateral, tipografía
@@ -61,7 +72,10 @@ Descargá un respaldo desde Mi espacio y cerrá Nexo desde la bandeja. Extraé l
 versión nueva en otra carpeta y abrí su Nexo.exe. Los datos de la instalación
 Windows se conservan en `%LOCALAPPDATA%\NexoClientes\Datos`.
 Después, **recargá la extensión de Nexo** en `chrome://extensions` para que use
-el código actualizado. No instales una segunda copia de la extensión.
+el código actualizado. No instales una segunda copia de la extensión. Volvé a ejecutar
+`Conectar-con-Claude.cmd` para registrar el espacio elegido si usás ese conector.
+Después de iniciar sesión en 3.11, el hash se actualiza: no uses versiones
+anteriores para operar esa misma base.
 
 Compartí el ZIP de Releases; nunca tu carpeta Datos o la extensión ya configurada.
 Cada persona crea su cuenta local y sus conexiones. No hay sincronización en nube:
@@ -91,9 +105,12 @@ powershell -File build-portable.ps1 -OutputDirectory dist/Nexo
 Se puede elegir otro runtime con `-NodePath` y su licencia con `-NodeLicensePath`.
 El ZIP no incluye bases, cuentas, sesiones, tokens, perfiles ni archivos de QA.
 La [plantilla de CI para Windows](docs/validate-workflow.example.yml) ejecuta las
-pruebas y construye el portable. Está preparada para copiarla a
+pruebas y verifica el lanzador. La [plantilla CodeQL](docs/security-workflow.example.yml)
+prepara el análisis de JavaScript en cambios y semanalmente. Está preparada para copiarla a
 `.github/workflows/validate.yml` desde una sesión con permiso `workflow`; el acceso
 actual permite publicar código y releases, pero no activar workflows.
+Los reportes privados de vulnerabilidades, el análisis de secretos y la
+protección contra subir credenciales sí están activos.
 
 Nexo es independiente del catálogo de aplicaciones de Practical Solutions. No
 se instala en sus servidores Development/Producción. La validación del escritorio

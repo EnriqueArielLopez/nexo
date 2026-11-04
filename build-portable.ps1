@@ -28,6 +28,7 @@ $nodeBinary=(Resolve-Path -LiteralPath $NodePath).Path
 Copy-Item -LiteralPath $nodeBinary -Destination (Join-Path $binFolder 'node.exe')
 Copy-Item -LiteralPath $NodeLicensePath -Destination (Join-Path $binFolder 'LICENSE.txt')
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'EMPEZA-ACA.txt') -Destination $outputFull
+foreach($name in @('SECURITY.md','PRIVACIDAD.md')) { Copy-Item -LiteralPath (Join-Path $PSScriptRoot $name) -Destination $outputFull }
 $appVersion=(Get-Content -LiteralPath (Join-Path $PSScriptRoot 'package.json') -Raw | ConvertFrom-Json).version
 Set-Content -LiteralPath (Join-Path $outputFull 'VERSION.txt') -Value "Nexo $appVersion`r`nNode $($runtime.version) x64"
 Set-Content -LiteralPath (Join-Path $outputFull 'Conectar-con-Claude.cmd') -Value '@echo off

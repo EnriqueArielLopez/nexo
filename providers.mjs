@@ -1,7 +1,7 @@
 import {inCountries,isNewProspect} from './campaign.mjs';
 import {handle,httpUrl} from './core.mjs';
 import {qualify,auditReason} from './qualification.mjs';
-export async function requestJson(url,options={}) {let res;try{res=await fetch(url,{...options,signal:AbortSignal.timeout(120000)});}catch{throw Error('No se pudo confirmar la respuesta del proveedor. Revisá conexión y estado antes de reintentar.');}let data;try{data=await res.json();}catch{throw Error('El proveedor devolvió una respuesta no válida.');}if(!res.ok){const e=Error(`Proveedor respondió HTTP ${res.status}. Revisá credenciales, permisos, saldo o cupos en su consola.`);e.definite=true;e.status=res.status;throw e;}return data;}
+export async function requestJson(url,options={}) {let res;try{res=await fetch(url,{...options,redirect:'error',signal:AbortSignal.timeout(120000)});}catch{throw Error('No se pudo confirmar la respuesta del proveedor. Revisá conexión y estado antes de reintentar.');}let data;try{data=await res.json();}catch{throw Error('El proveedor devolvió una respuesta no válida.');}if(!res.ok){const e=Error(`Proveedor respondió HTTP ${res.status}. Revisá credenciales, permisos, saldo o cupos en su consola.`);e.definite=true;e.status=res.status;throw e;}return data;}
 const field=()=>({type:'string'});
 function sourceSet(response){const sources=new Set();const walk=x=>{if(Array.isArray(x))x.forEach(walk);else if(x&&typeof x==='object'){if(['web_search_result','web_search_result_location'].includes(x.type)&&httpUrl(x.url))sources.add(httpUrl(x.url));Object.values(x).forEach(walk);}};walk(response.content);return [...sources];}
 const researchText=response=>(response.content||[]).filter(c=>c.type==='text').map(c=>c.text).join('\n').slice(0,28000);

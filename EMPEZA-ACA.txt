@@ -1,4 +1,4 @@
-NEXO · CLIENTES 3.10.0
+NEXO · CLIENTES 3.11.0
 
 INSTALAR EN WINDOWS
 1. Descargá Nexo-Windows-portable.zip desde:
@@ -80,7 +80,7 @@ sin abrir esa cuenta otra vez. Cambiar la propuesta o limpiar resultados no borr
 esta protección. No se recorre toda tu bandeja: se comprueba cada chat desconocido.
 Si el chat no termina de cargar, se omite y se muestra el motivo en la tanda.
 
-Después de actualizar, recargá la extensión para usar la versión 1.2.
+Después de actualizar, recargá la extensión para usar la versión 1.3.
 No hagas envíos con versiones anteriores a 3.10 después de usar esta versión:
 no reconocen el nuevo registro de conversaciones previas ni la protección
 de propuestas personalizadas. Conservá tu historial.
@@ -90,3 +90,19 @@ La barra lateral reúne Descubrir, Clientes y Enviar propuestas.
 Historial de contactos y Preferencias quedan siempre a mano. Guía de Nexo
 explica el recorrido sin interrumpirte al entrar. Cada persona debe conectar
 su propia sesión de Instagram; el ZIP no incluye cuentas ni configuraciones.
+
+SEGURIDAD Y PRIVACIDAD DE 3.11
+Leé SECURITY.md y PRIVACIDAD.md, incluidos en el ZIP. Los datos, respaldos y
+Excel son privados; no compartas Datos ni la extensión configurada. La cuenta
+de Nexo no aísla a personas que usan el mismo usuario de Windows.
+Los bloqueos de acceso sobreviven al reinicio. La contraseña se refuerza al
+iniciar sesión: después, no operes la base con una versión anterior a 3.11.
+El correo exige TLS (465/587). Si cambiás servidor o casilla, ingresá de nuevo
+la contraseña de aplicación.
+Claude puede investigar y preparar propuestas; confirmá los envíos de email
+y las programaciones desde Nexo. El conector no obtiene tus credenciales.
+Si usás varios espacios, volvé a ejecutar Conectar-con-Claude.cmd para elegir
+cuál podrá consultar. El conector no elige otra cuenta automáticamente.
+No se garantiza ausencia de incidentes, restricciones del proveedor o demandas.
+Para uso comercial o para terceros, revisá las obligaciones de datos personales
+y las condiciones de los proveedores según tu caso.
