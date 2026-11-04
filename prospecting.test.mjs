@@ -29,6 +29,63 @@ test('respaldo conserva archivados y cambiar plantilla invalida la huella de una
  const lead=webCandidate(candidate(),settings,{services:'contenido'});ingest(a.store,[lead]);const ids=a.store.list().map(l=>l.id),before=prepareBatch(a.store,ids);a.store.saveSettings({template:'Otro mensaje para {cliente}'});assert.notEqual(before.token,prepareBatch(a.store,ids).token);assert.equal(a.store.archiveResults(),1);
  const backup=readImport({format:'json',content:JSON.stringify({format:'nexo-backup-v1',leads:a.store.list({includeArchived:true}),history:a.store.history()})});assert.equal(ingest(b.store,backup).added,1);assert.equal(b.store.list().length,0);assert.equal(b.store.list({includeArchived:true}).length,1);assert.equal(b.store.restoreResults(),1);
  }finally{a.close();b.close();}});
+
+test('la tanda respeta una propuesta guardada aunque cambie el mensaje base, por Instagram y email',()=>{
+ const f=fixture();try{
+  const id=f.store.add({handle:'borrador_personal',name:'Hotel Personal',source:'https://example.com',language:'es',email:'hotel@example.com'}).id;
+  f.store.update(id,{message:'Propuesta personal revisada para este negocio.'});
+  f.store.saveSettings({template:'Mensaje base nuevo para {cliente}'});
+  for(const channel of ['instagram','email']){
+   const batch=prepareBatch(f.store,[id],channel);
+   assert.equal(batch.items[0].message,'Propuesta personal revisada para este negocio.');
+   approveBatch(f.store,batch);assert.equal(f.store.get(id).message_custom,1);
+  }
+  f.store.update(id,{message:''});
+  assert.equal(prepareBatch(f.store,[id]).items.length,0,'un borrador vacío requiere edición, no se reemplaza solo');
+ }finally{f.close();}
+});
+
+test('actualizar una base anterior conserva los borradores y mantiene automáticos los textos que coinciden',()=>{
+ const dir=mkdtempSync(path.join(path.resolve('qa'),'nexo-legacy-draft-'));let store=new Store(dir);
+ try{
+  store.saveSettings(settings);
+  const auto=store.add({handle:'auto_antiguo',name:'Hotel Auto',source:'https://example.com',language:'es'}).id;
+  const custom=store.add({handle:'personal_antiguo',name:'Hotel Personal',source:'https://example.com',language:'es'}).id;
+  store.update(custom,{message:'Una propuesta que la persona había guardado.'});
+  store.db.exec('ALTER TABLE leads DROP COLUMN message_custom');store.close();store=new Store(dir);
+  assert.equal(store.get(auto).message_custom,0);assert.equal(store.get(custom).message_custom,1);
+  store.saveSettings({template:'Base actualizada para {cliente}'});
+  const batch=prepareBatch(store,[auto,custom]);
+  assert.equal(batch.items.find(l=>l.id===custom).message,'Una propuesta que la persona había guardado.');
+  assert.equal(batch.items.find(l=>l.id===auto).message,'Base actualizada para Hotel Auto');
+ }finally{store.close();rmSync(dir,{recursive:true,force:true});}
+});
+
+test('el respaldo conserva conversaciones previas, envíos inciertos y propuestas guardadas sin duplicar cupos',()=>{
+ const a=fixture(),b=fixture();try{
+  const known=a.store.add({handle:'contacto_previo',name:'Hotel Previo',source:'https://example.com',language:'es'}).id;
+  const uncertain=a.store.add({handle:'envio_incierto',name:'Hotel Incierto',source:'https://example.com',language:'es'}).id;
+  a.store.rememberContact(known);a.store.update(known,{message:'Borrador conservado'});
+  a.store.update(uncertain,{approved:true});a.store.finish(a.store.reserve(uncertain).event,'uncertain','QA');
+  const backup=readImport({format:'json',content:JSON.stringify({format:'nexo-backup-v1',leads:a.store.list(),history:a.store.history()})});
+  assert.equal(ingest(b.store,backup).history,2);assert.equal(ingest(b.store,backup).history,0);
+  const previous=b.store.list().find(l=>l.handle==='contacto_previo'),pending=b.store.list().find(l=>l.handle==='envio_incierto');
+  assert.equal(previous.eventStatus,'contacted');assert.equal(previous.message_custom,1);assert.equal(previous.message,'Borrador conservado');
+  assert.match(pending.block,/sin confirmar/);assert.equal(b.store.counts().daily,1);
+  assert.equal(prepareBatch(b.store,[previous.id,pending.id]).items.length,0);
+ }finally{a.close();b.close();}
+});
+
+test('una planilla conserva la conversación previa y un respaldo antiguo conserva su propuesta distinta de la base',()=>{
+ const f=fixture();try{
+  const rows=readImport({format:'csv',content:'Hotel,Instagram,Estado / acción pendiente,Propuesta,Fuente pública\nHotel Planilla,hotel_planilla,Conversación previa · sin nuevo envío,Mensaje conservado,https://example.com'});
+  rows[0].last=new Date().toISOString();assert.equal(ingest(f.store,rows).history,1);
+  const previous=f.store.list()[0];assert.equal(previous.eventStatus,'contacted');assert.equal(f.store.counts().daily,0);
+  ingest(f.store,[{handle:'borrador_importado',name:'Hotel Importado',source:'https://example.com',language:'es',message:'Propuesta de un respaldo anterior a 3.10'}]);
+  const imported=f.store.list().find(l=>l.handle==='borrador_importado');
+  assert.equal(imported.message_custom,1);assert.equal(prepareBatch(f.store,[imported.id]).items[0].message,imported.message);
+ }finally{f.close();}
+});
 test('la web propia aporta estrellas oficiales, cuenta enlazada y email sin adivinarlos',()=>{
  const hotel={'@type':'Hotel',name:'Hotel QA',url:'https://hotel-qa.example/',starRating:{ratingValue:3},address:{addressLocality:'Madrid',addressCountry:'ES'},email:'reservas@hotel-qa.example'};
  const page={url:hotel.url,html:'<script type="application/ld+json">'+JSON.stringify(hotel)+'</script><a href="https://instagram.com/hotel_qa/">Instagram</a><a href="https://www.instagram.com/hotel_qa/">IG</a>'};

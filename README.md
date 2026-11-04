@@ -5,8 +5,8 @@ trabajan en segundo plano para que puedas seguir usando la computadora.
 
 ## Descargar y empezar (Windows)
 
-1. Abrí la [última versión](https://github.com/EnriqueArielLopez/nexo/releases/latest)
-   y descargá **Nexo-Windows-portable.zip**.
+1. Descargá [Nexo para Windows x64](https://github.com/EnriqueArielLopez/nexo/releases/download/v3.10.0/Nexo-Windows-portable.zip).
+   También está en la [última versión](https://github.com/EnriqueArielLopez/nexo/releases/latest).
 2. Extraé todo el ZIP en una carpeta fija y abrí **Nexo.exe**.
 3. Creá tu cuenta local. Para buscar, completá tu Instagram, oferta y filtros.
 4. Para enviar por Instagram, seguí **Conectar mi Chrome** dentro de Nexo.
@@ -17,6 +17,10 @@ Windows 10/11 x64, Edge e Internet; Chrome para enviar por navegador. El paquete
 incluye Node y sus licencias. No necesitás instalar Node, Python, Excel ni Claude.
 El ejecutable aún no tiene firma digital. El archivo `.sha256` permite comprobar
 la descarga con `Get-FileHash -Algorithm SHA256`.
+
+![Nexo 3.10: cartera de clientes](docs/images/nexo-clientes.jpg)
+
+*Vista de ejemplo con datos ficticios.*
 
 ## Qué cambia
 
@@ -32,9 +36,16 @@ la descarga con `Get-FileHash -Algorithm SHA256`.
 - **Chrome en segundo plano:** la extensión 1.2 crea la ventana ya minimizada y
   recupera la emulación de foco cuando se reconecta. Los errores pausan o se
   informan en Nexo; no traen Chrome al frente. El login sí requiere intervención.
-- **Interfaz de trabajo:** tipografía del sistema, mayor contraste, superficies
-  sólidas y un acento verde. Se retiraron fondos animados, transparencias y capas
-  decorativas. En pantallas pequeñas se priorizan cliente, estado y revisión.
+- **Nuevo escritorio:** identidad visual propia, navegación lateral, tipografía
+  Manrope incluida y cartera con resumen, filtros y estados claros. El editor
+  separa la información del negocio de la propuesta. La navegación se adapta
+  a ventanas pequeñas.
+- **Propuestas que se conservan:** editar y guardar un mensaje ya no se pierde al
+  preparar una tanda. Las propuestas personalizadas se respetan por Instagram y
+  email, incluso al cambiar el mensaje base. Los respaldos conservan conversaciones
+  previas, envíos inciertos y borradores.
+- **Guía actualizada:** los pasos Descubrir, Clientes y Enviar propuestas coinciden
+  con el programa; no hay un recorrido automático que interrumpa el primer ingreso.
 - **Progreso claro:** muestra enviados, omitidos y pendientes, incluyendo fallos
   que detienen la tanda. El registro distingue un envío nuevo de un chat previo.
 

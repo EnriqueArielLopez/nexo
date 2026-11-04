@@ -21,7 +21,7 @@ El botón Mostrar permite revisar la escritura. Si fallás cinco veces,
 Nexo espera 15 minutos y muestra cuánto falta. Esperá a que termine;
 no hace falta cerrar el programa. Al vencer, el contador empieza de nuevo.
 
-1 · BUSCAR
+1 · DESCUBRIR
 Pegá tu Instagram y completá qué ofrecés, rubro, país y ciudad.
 Empezá con 20 clientes y alcance Rápido. La lista aparece mientras busca.
 Podés elegir 50 o 100 y alcance Ampliado para dedicar más tiempo.
@@ -35,21 +35,22 @@ No siempre hay suficientes resultados públicos.
 pendientes anteriores, conservando enviados, bajas, programados y tandas
 en curso. Recuperalos desde Más > Restaurar resultados limpiados.
 
-2 · ELEGIR
-Última búsqueda muestra los resultados nuevos. Usá filtros de texto/país
-y los botones Anterior/Siguiente. Abrí Ver para revisar el perfil y el
-mensaje. Marcá a quién contactar y continuá al paso 3.
+2 · CLIENTES
+Descubiertos muestra los resultados nuevos. Usá filtros de texto/país
+y los botones Anterior/Siguiente. Abrí Revisar para ver el perfil y editar
+la propuesta. Guardá los cambios: se respetan al preparar la tanda. Marcá
+a quién contactar y entrá a Enviar propuestas.
 
-3 · ENVIAR Y SEGUIR TRABAJANDO
+3 · ENVIAR PROPUESTAS Y SEGUIR TRABAJANDO
 Revisá destinatarios y mensajes antes de confirmar.
 Instagram trabaja en una ventana minimizada, con pausas entre mensajes.
 Podés usar otras aplicaciones. Solo vuelve al frente para iniciar sesión. Los errores se informan en Nexo sin traer Chrome al frente.
 No cierres la ventana de Chrome que usa Nexo.
 La barra de Chrome que informa que Nexo depura el navegador es normal.
 Los emails también se envían en segundo plano; configurá tu casilla en
-Ajustes. El progreso queda visible arriba en Nexo.
+Preferencias. El progreso queda visible arriba en Nexo.
 Podés detener y reanudar pendientes. Los resultados inciertos se revisan
-en Más > Historial antes de intentar nuevamente.
+en Historial de contactos antes de intentar nuevamente.
 
 Cerrar la ventana con la X de Windows deja Nexo en el icono junto al reloj.
 Desde allí podés volver a abrirlo o elegir Cerrar Nexo. El botón Cerrar Nexo
@@ -81,4 +82,11 @@ Si el chat no termina de cargar, se omite y se muestra el motivo en la tanda.
 
 Después de actualizar, recargá la extensión para usar la versión 1.2.
 No hagas envíos con versiones anteriores a 3.10 después de usar esta versión:
-no reconocen el nuevo registro de conversaciones previas. Conservá tu historial.
+no reconocen el nuevo registro de conversaciones previas ni la protección
+de propuestas personalizadas. Conservá tu historial.
+
+GUÍA Y NAVEGACIÓN
+La barra lateral reúne Descubrir, Clientes y Enviar propuestas.
+Historial de contactos y Preferencias quedan siempre a mano. Guía de Nexo
+explica el recorrido sin interrumpirte al entrar. Cada persona debe conectar
+su propia sesión de Instagram; el ZIP no incluye cuentas ni configuraciones.

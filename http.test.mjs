@@ -11,6 +11,30 @@ import {Accounts} from './auth.mjs';
 import {Store} from './core.mjs';
 import {unzip} from './zip.mjs';
 
+test('primera instalación: crear espacio, entrar, usar ejemplos y conservar sesión sin configuración privada',async t=>{
+ const dir=mkdtempSync(path.join(os.tmpdir(),'nexo-first-run-'));
+ const listener=net.createServer();await new Promise(r=>listener.listen(0,'127.0.0.1',r));
+ const port=listener.address().port;await new Promise(r=>listener.close(r));
+ const origin='http://127.0.0.1:'+port;
+ const child=spawn(process.execPath,['--disable-warning=ExperimentalWarning','server.mjs'],{cwd:fileURLToPath(new URL('.',import.meta.url)),env:{...process.env,PORT:String(port),HOTEL_DATA_DIR:dir},windowsHide:true,stdio:'pipe'});
+ let stderr='';child.stderr.on('data',v=>stderr+=v);child.stdout.resume();
+ t.after(async()=>{const closed=new Promise(r=>child.once('exit',r));if(child.exitCode===null){child.kill();await closed;}rmSync(dir,{recursive:true,force:true});});
+ let ready=false;for(let i=0;i<100;i++){if(child.exitCode!==null)throw Error(stderr);try{ready=(await fetch(origin+'/api/health')).ok;if(ready)break;}catch{}await delay(50);}assert.equal(ready,true,stderr);
+ const session=await(await fetch(origin+'/api/session')).json();assert.equal(session.hasAccounts,false);
+ const register=await fetch(origin+'/api/register',{method:'POST',headers:{origin,'content-type':'application/json','x-csrf-token':session.csrf},body:JSON.stringify({name:'Espacio Ficticio',password:'clave-ficticia-310',remember:true})});
+ assert.equal(register.status,200);const cookie=register.headers.get('set-cookie').split(';')[0];
+ const headers={cookie,origin,'content-type':'application/json','x-csrf-token':session.csrf};
+ const post=(route,body={})=>fetch(origin+'/api/'+route,{method:'POST',headers,body:JSON.stringify(body)});
+ let state=await(await fetch(origin+'/api/state',{headers:{cookie}})).json();
+ assert.equal(state.user.name,'Espacio Ficticio');assert.equal(state.leads.length,0);assert.equal(state.chromeConnected,false);assert.equal(state.email.configured,false);
+ assert.equal((await post('demo')).status,200);
+ state=await(await fetch(origin+'/api/state',{headers:{cookie}})).json();assert.equal(state.leads.length,3);assert.ok(state.leads.every(l=>l.demo));assert.equal(state.history.length,0);
+ const font=await fetch(origin+'/fonts/Manrope-600.ttf');assert.equal(font.status,200);assert.ok((await font.arrayBuffer()).byteLength>10000);
+ assert.equal((await(await fetch(origin+'/api/session',{headers:{cookie}})).json()).user.name,'Espacio Ficticio');
+ assert.equal((await post('logout')).status,200);
+ assert.equal((await fetch(origin+'/api/state',{headers:{cookie}})).status,401);
+});
+
 test('HTTP real: acceso, planilla grande, edición, limpieza, restauración y Excel',async t=>{
  const dir=mkdtempSync(path.join(os.tmpdir(),'nexo-http-'));
  const accounts=new Accounts(dir);accounts.create('QA FICTICIO','qa-sin-datos-reales');accounts.close();
@@ -35,6 +59,8 @@ test('HTTP real: acceso, planilla grande, edición, limpieza, restauración y Ex
  assert.equal((await fetch(origin+'/api/state',{headers:{cookie,origin:'https://example.com'}})).status,403);
  const id=state.leads.find(l=>!l.eventStatus).id;
  assert.equal((await post('update',{id,message:'Borrador QA conservado'})).status,200);
+ const preview=await post('batch/preview',{ids:[id],channel:'instagram'});assert.equal(preview.status,200);assert.equal(preview.body.items[0].message,'Borrador QA conservado');
+ const backup=await(await fetch(origin+'/api/backup',{headers:{cookie}})).json();assert.ok(backup.history.some(e=>e.status==='contacted'));assert.equal(backup.leads.find(l=>l.id===id).message_custom,1);
  assert.equal((await post('ig/send',{ids:[id]})).status,400,'no envía sin confirmación');
  assert.equal((await post('ig/send',{ids:[id],confirm:true,token:'incorrecto'})).status,400,'no envía con vista previa distinta');
  assert.equal((await post('search',{seed:'incorrecto'})).status,400,'no limpia si el perfil es inválido');

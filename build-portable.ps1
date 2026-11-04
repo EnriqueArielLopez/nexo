@@ -37,10 +37,16 @@ Add-Type -AssemblyName System.Drawing
 $bitmap=New-Object System.Drawing.Bitmap 64,64
 $graphics=[Drawing.Graphics]::FromImage($bitmap)
 $graphics.SmoothingMode=[Drawing.Drawing2D.SmoothingMode]::AntiAlias
-$graphics.Clear([Drawing.Color]::FromArgb(120,85,232))
+$graphics.Clear([Drawing.Color]::FromArgb(69,105,221))
 $iconFont=New-Object Drawing.Font 'Segoe UI',40,([Drawing.FontStyle]::Bold)
 $brush=New-Object Drawing.SolidBrush ([Drawing.Color]::White)
-$graphics.DrawString('n',$iconFont,$brush,6,-7)
+$brandPen=New-Object Drawing.Pen ([Drawing.Color]::White),5
+$brandPen.StartCap=[Drawing.Drawing2D.LineCap]::Round
+$brandPen.EndCap=[Drawing.Drawing2D.LineCap]::Round
+$brandPen.LineJoin=[Drawing.Drawing2D.LineJoin]::Round
+$brandPoints=[Drawing.Point[]]@((New-Object Drawing.Point 16,48),(New-Object Drawing.Point 16,19),(New-Object Drawing.Point 22,14),(New-Object Drawing.Point 28,14),(New-Object Drawing.Point 48,49),(New-Object Drawing.Point 48,19),(New-Object Drawing.Point 44,14),(New-Object Drawing.Point 40,14))
+$graphics.DrawLines($brandPen,$brandPoints)
+$brandPen.Dispose()
 $icon=[Drawing.Icon]::FromHandle($bitmap.GetHicon())
 $iconPath=Join-Path $PSScriptRoot 'build\nexo.ico'
 $stream=[IO.File]::Create($iconPath)

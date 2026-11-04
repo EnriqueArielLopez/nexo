@@ -28,13 +28,24 @@ reconectar; el sender la reafirma después de navegar. Los errores dejan de
 activar Chrome. Solo el login lo muestra automáticamente. Progreso recalculado
 a partir de los destinatarios, incluyendo fallos que pausan la tanda.
 
-UI: tipografía del sistema, contraste más alto, acento verde, superficies sólidas,
-menos efectos decorativos y prioridad a cliente/estado en pantallas pequeñas.
+El diseño final reemplaza las capas acumuladas por una sola base de estilos:
+marca propia, navegación lateral azul oscuro, Manrope local, resumen real de la
+cartera y editor en dos paneles. El ingreso tiene composición propia y la guía
+manual coincide con Descubrir, Clientes y Enviar propuestas. En móvil usa
+navegación inferior. Las capturas públicas contienen datos ficticios.
+
+El smoke descubrió que preparar la tanda regeneraba y pisaba la propuesta
+personalizada. Se corrigió con message_custom y se probó también tras migrar
+una base anterior. El cambio de plantilla sigue aplicándose a mensajes
+automáticos. El respaldo/importación conserva conversaciones e inciertos y no
+transforma una fecha de detección en un envío. Las pruebas no modifican datos
+personales.
 
 ## Evidencia local
 
-- Suite final completa: 118/118 pruebas correctas con Node 24.22.2 x64,
-  incluida la memoria tras cerrar/reabrir SQLite. El grupo de sender/extensión
+- Suite final completa: 123/123 pruebas correctas con Node 24.22.2 x64,
+  incluida la memoria tras cerrar/reabrir SQLite, borradores, migración anterior,
+  respaldo/importación y primer inicio sin configuración privada. El grupo de sender/extensión
   tiene 12/12 casos correctos.
 - 12/12 escenarios DOM en navegador real con HTML ficticio: vacío, propuesta
   distinta, mensaje con hora/controles, multimedia, borrador, tarjeta inicial,
@@ -46,8 +57,10 @@ menos efectos decorativos y prioridad a cliente/estado en pantallas pequeñas.
   en una ejecución local; es una medición puntual, no una garantía.
 - UI con base ficticia aislada en 127.0.0.1:18779: login, recarga, Enviados con
   ambas clases de registro y casillas bloqueadas, selección, paso de envío y
-  vista previa con confirmación requerida. Revisión visual en el viewport del
-  navegador integrado, incluida la tabla estrecha sin ocultar su estado.
+  vista previa con confirmación requerida. Revisión visual en el navegador integrado a 1320 × 940 y 390 × 844: navegación, filtros,
+  guardado y persistencia del borrador en la vista previa, tabla sin desborde
+  horizontal, selección, confirmación obligatoria, guía e ingreso. Sin errores
+  de consola en esos flujos.
 - Nueve comprobaciones del lanzador Windows correctas.
 - Portable compilado con Node 24.22.2 x64. Smoke HTTP desde su propio runtime:
   correcto, incluidos 1.200 clientes y Excel (38 ms de estado en esa ejecución).
@@ -71,12 +84,13 @@ una base antigua sobre el historial reciente.
 
 ## Entrega
 
-Código y documentación subidos para revisión en el
-[PR #4](https://github.com/EnriqueArielLopez/nexo/pull/4), commit de código
-`28513ee`. La rama remota queda conservada hasta integrar y validar main. ZIP verificado:
-52 entradas, 44 archivos de la aplicación coincidentes por SHA-256 con el código
-probado; sin bases, perfiles, tokens ni archivos de QA. SHA-256 del ZIP:
-`b642b04c7e4e4c146a93c6e182da8c9a8fa17eefe14056a38fba9bbd6e7af2c4`. Portable de
-prueba en `dist/validado-3.10.0`, sin datos personales. No se publicó una release ni
-se actualizó la instalación activa. La rama se conserva hasta su integración y
-validación de main; no se presenta la validación Local como Development/Producción.
+El PR #4 reúne correcciones e interfaz final. Se valida la rama en Local y con
+un portable aislado; después se integra a main y se genera desde allí el ZIP
+público. La instalación activa del titular no se reemplaza como parte de la
+publicación. Nexo no usa los servidores Development/Producción de ps-stack.
+
+Portable candidato con interfaz final: 52 entradas y 44 archivos coincidentes
+por SHA-256. Primer inicio y HTTP con 1.200 contactos correctos desde su propio
+Node 24.22.2. Checksum del candidato:
+`872c884dd7089c75fbe06ddc711942b3f8338b397cc4926a2b3a3ca01b29ca60`.
+Estado de publicación y checksum final: se registran después de verificar la release.

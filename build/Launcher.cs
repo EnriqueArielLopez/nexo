@@ -36,8 +36,8 @@ static class Launcher {
         if(args.Length>0&&args[0]=="--stop"){Quit();CloseWindows();return;}
         if(Ready()){Open();return;}
         Process server=null;
-        var splash=new Form {Text="Nexo",Width=380,Height=170,StartPosition=FormStartPosition.CenterScreen,FormBorderStyle=FormBorderStyle.FixedDialog,MaximizeBox=false,MinimizeBox=false,BackColor=Color.FromArgb(248,246,255)};
-        splash.Controls.Add(new Label {Text="Nexo se está abriendo…",Font=new Font("Segoe UI",15,FontStyle.Bold),AutoSize=true,Location=new Point(35,35),ForeColor=Color.FromArgb(105,75,185)});
+        var splash=new Form {Text="Nexo",Width=380,Height=170,StartPosition=FormStartPosition.CenterScreen,FormBorderStyle=FormBorderStyle.FixedDialog,MaximizeBox=false,MinimizeBox=false,BackColor=Color.FromArgb(245,246,249)};
+        splash.Controls.Add(new Label {Text="Nexo se está abriendo…",Font=new Font("Segoe UI",15,FontStyle.Bold),AutoSize=true,Location=new Point(35,35),ForeColor=Color.FromArgb(69,105,221)});
         try {
             var node=Path.Combine(Root,@"bin\node.exe");var entry=Path.Combine(Root,@"app\server.mjs");
             if(!File.Exists(node)||!File.Exists(entry))throw new Exception("Extraé la carpeta completa del ZIP antes de abrir Nexo.exe. No muevas solo el ejecutable.");

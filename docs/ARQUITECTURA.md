@@ -33,6 +33,30 @@ al iniciar otra búsqueda con limpieza. Las bajas y el historial siguen guardado
 y se excluyen de nuevos descubrimientos. Restaurar no habilita bajas ni envíos
 inciertos. Un respaldo JSON/Excel es una exportación, no una copia del programa.
 
+## Interfaz y propuestas
+
+La UI tiene una sola base de estilos, tipografía Manrope local y navegación
+persistente entre Descubrir, Clientes y Enviar propuestas. El editor separa
+contexto y mensaje; en ventanas pequeñas apila ambos paneles. Los indicadores de
+la cartera se calculan con los datos del usuario, sin métricas ficticias. La guía
+es manual y describe el flujo vigente. No carga fuentes ni servicios de diseño
+externos. Las capturas del README contienen solo ejemplos ficticios.
+
+`leads.message_custom` distingue un borrador elegido por la persona de una
+propuesta automática. Una actualización que incluye mensaje lo marca como
+personalizado; `approveBatch` mantiene explícitamente el modo original. La tanda
+reutiliza el borrador en ambos canales, mientras los mensajes automáticos siguen
+la plantilla vigente. Un personalizado vacío requiere edición. Al añadir la
+columna, una única comparación local conserva como personalizados los mensajes
+anteriores que no coinciden con la plantilla; no modifica el texto ni el historial.
+Los respaldos nuevos transportan la marca; textos distintos de respaldos antiguos
+se conservan de forma prudente. La restauración de resultados no pisa un borrador.
+
+La importación JSON conserva enviados, inciertos y conversaciones previas. Un
+pending recuperado queda uncertain para revisión. La planilla reconoce el estado
+Conversación previa sin inventar un envío ni consumir cupo. Reimportar el mismo
+historial no crea eventos duplicados.
+
 ## Búsqueda
 
 `web-discovery.mjs` separa descubrimiento de revisión de actividad. En modo rápido
