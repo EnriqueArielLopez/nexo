@@ -157,7 +157,9 @@ con la cuenta real y destinatarios revisados antes de operar una campaña.
 ## Seguridad 3.11
 
 El cierre requiere sesión o el token privado de `.shutdown-token`, renovado al
-arrancar y leído por el lanzador; no se sirve por HTTP. La extensión 1.3 limita
+arrancar y leído por el lanzador; no se sirve por HTTP. El lanzador valida
+además una respuesta HMAC a un desafío aleatorio antes de abrir la UI. La
+capacidad de cierre se deriva por separado: la clave privada no viaja por HTTP. La extensión 1.3 limita
 comandos, verifica ventana/URL y devuelve presencia de sesión sin cookies reales.
 La lectura pública fija DNS al socket y vuelve a validar redirecciones. SMTP
 valida sobres/encabezados y exige TLS, y el cambio de destino exige la clave.

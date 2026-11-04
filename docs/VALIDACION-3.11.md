@@ -19,7 +19,7 @@ correo, consultas públicas, extensión, herramientas del asistente/MCP y paquet
 | MCP descifraba credenciales y aceptaba un booleano del modelo para enviar o programar | Eliminación del acceso a DPAPI y de esas herramientas, rechazo incluso si se invocan directamente; pruebas por stdio y selección obligatoria de espacio |
 | DNS se validaba y después se resolvía otra vez al conectar | Dirección validada fijada al socket, rechazo de redes reservadas/transiciones, redirecciones validadas y pruebas de sustitución de resolución |
 | Configuración SMTP/encabezados podían aceptar valores peligrosos; cambiar destino podía reutilizar credenciales | Sobres y encabezados validados, TLS obligatorio, cambio de servidor/casilla requiere clave nueva y ruta general no cambia transporte; respuestas remotas no se copian en errores |
-| Cualquier cliente local con CSRF público podía cerrar la app sin sesión | Cierre con sesión o token privado renovado por arranque, archivo fuera del servidor estático y adaptación del lanzador; prueba de rechazo y cierre válido |
+| Cualquier cliente local con CSRF público podía cerrar la app sin sesión; el lanzador confiaba solo en el nombre del servicio | Cierre con sesión o token privado renovado por arranque, archivo fuera del servidor estático y adaptación del lanzador; prueba de rechazo y cierre válido; desafío HMAC para autenticar el servidor sin transmitir la clave y rechazo de respuestas falsas/reutilizadas |
 
 Las contraseñas anteriores se refuerzan al acceder. No operar esa base con una
 versión anterior a 3.11 después de migrar. No borrar/restaurar una base antigua
@@ -29,7 +29,9 @@ para eludir esta regla, porque perdería memoria de contactos y bajas.
 
 - `npm test`: 133 pruebas, sin fallos ni omisiones, incluyendo seguridad y las
   regresiones previas de duplicados, borradores, colas y OAuth.
-- Lanzador Windows compilado: 9 comprobaciones de salud.
+- Lanzador Windows compilado: 14 comprobaciones de salud e identidad.
+  Integración C# contra HTTP de QA: servidor genuino aceptado, clave de otra
+  instalación rechazada y cierre privado completado sin abrir ventanas.
 - Smoke HTTP del portable con Node incluido: primera instalación, dos espacios
   aislados, sesión/CSRF, límites, cierre privado, 1200 contactos, borradores,
   archivo/restauración, historial de conversaciones y descarga de Excel.

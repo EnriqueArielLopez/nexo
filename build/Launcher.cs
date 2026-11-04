@@ -7,6 +7,7 @@ using System.Drawing;
 using System.Windows.Forms;
 using System.Web.Script.Serialization;
 using System.Text;
+using System.Security.Cryptography;
 using System.Runtime.InteropServices;
 
 static class Launcher {
@@ -19,7 +20,9 @@ static class Launcher {
             return health!=null&&health.ContainsKey("app")&&object.Equals(health["app"],"nexo")&&health.ContainsKey("ok")&&object.Equals(health["ok"],true);
         } catch { return false; }
     }
-    internal static bool Ready(int timeout=1200) { try { return IsNexoHealth(Read("/api/health",timeout)); } catch { return false; } }
+    internal static string LocalProof(string secret,string message) { using(var h=new HMACSHA256(Encoding.UTF8.GetBytes(secret)))return BitConverter.ToString(h.ComputeHash(Encoding.UTF8.GetBytes(message))).Replace("-","").ToLowerInvariant(); }
+    internal static bool IsTrustedHealth(string json,string nonce,string secret) { try {if(!IsNexoHealth(json)||secret.Length!=64||nonce.Length!=32)return false;var data=new JavaScriptSerializer().DeserializeObject(json) as System.Collections.Generic.Dictionary<string,object>;return data.ContainsKey("proof")&&object.Equals(data["proof"],LocalProof(secret,"nexo-health-v1:"+nonce));}catch{return false;} }
+    internal static bool Ready(int timeout=1200) { try {var secret=File.ReadAllText(Path.Combine(DataFolder,".shutdown-token")).Trim();var nonce=Guid.NewGuid().ToString("N");return IsTrustedHealth(Read("/api/health",timeout,nonce),nonce,secret); } catch { return false; } }
     delegate bool EnumCallback(IntPtr h,IntPtr l);
     [DllImport("user32.dll")] static extern bool EnumWindows(EnumCallback callback,IntPtr l);
     [DllImport("user32.dll",CharSet=CharSet.Unicode)] static extern int GetWindowText(IntPtr h,StringBuilder text,int count);
@@ -29,8 +32,8 @@ static class Launcher {
     [DllImport("user32.dll")] static extern bool PostMessage(IntPtr h,uint message,IntPtr w,IntPtr l);
     static System.Collections.Generic.List<IntPtr> Windows(){var found=new System.Collections.Generic.List<IntPtr>();EnumWindows((h,l)=>{var title=new StringBuilder(512);GetWindowText(h,title,title.Capacity);if(title.ToString().StartsWith("Nexo",StringComparison.OrdinalIgnoreCase)){uint pid;GetWindowThreadProcessId(h,out pid);try{var name=Process.GetProcessById((int)pid).ProcessName;if(name=="msedge"||name=="chrome")found.Add(h);}catch{}}return true;},IntPtr.Zero);return found;}
     static void CloseWindows(){foreach(var h in Windows())PostMessage(h,0x10,IntPtr.Zero,IntPtr.Zero);}
-    static string Read(string route,int timeout=1200) { var req=(HttpWebRequest)WebRequest.Create(Url+route);req.Timeout=timeout;req.Proxy=null;using(var r=req.GetResponse())using(var sr=new StreamReader(r.GetResponseStream()))return sr.ReadToEnd(); }
-    internal static void Quit() { try { var data=new JavaScriptSerializer().DeserializeObject(Read("/api/session")) as System.Collections.Generic.Dictionary<string,object>;var req=(HttpWebRequest)WebRequest.Create(Url+"/api/quit");req.Proxy=null;req.Timeout=4000;req.Method="POST";req.ContentType="application/json";req.Headers.Add("x-csrf-token",(string)data["csrf"]);req.Headers.Add("x-nexo-shutdown",File.ReadAllText(Path.Combine(DataFolder,".shutdown-token")).Trim());byte[] bytes=System.Text.Encoding.UTF8.GetBytes("{}");req.ContentLength=bytes.Length;using(var s=req.GetRequestStream())s.Write(bytes,0,bytes.Length);using(var r=req.GetResponse()){} }catch{} }
+    static string Read(string route,int timeout=1200,string probe=null) { var req=(HttpWebRequest)WebRequest.Create(Url+route);req.Timeout=timeout;req.Proxy=null;if(probe!=null)req.Headers.Add("x-nexo-probe",probe);using(var r=req.GetResponse())using(var sr=new StreamReader(r.GetResponseStream()))return sr.ReadToEnd(); }
+    internal static void Quit() { try {if(!Ready(4000))return;var secret=File.ReadAllText(Path.Combine(DataFolder,".shutdown-token")).Trim();var data=new JavaScriptSerializer().DeserializeObject(Read("/api/session")) as System.Collections.Generic.Dictionary<string,object>;var req=(HttpWebRequest)WebRequest.Create(Url+"/api/quit");req.Proxy=null;req.Timeout=4000;req.Method="POST";req.ContentType="application/json";req.Headers.Add("x-csrf-token",(string)data["csrf"]);req.Headers.Add("x-nexo-shutdown",LocalProof(secret,"nexo-shutdown-v1"));byte[] bytes=System.Text.Encoding.UTF8.GetBytes("{}");req.ContentLength=bytes.Length;using(var s=req.GetRequestStream())s.Write(bytes,0,bytes.Length);using(var r=req.GetResponse()){} }catch{} }
     internal static void Open() {var windows=Windows();if(windows.Count>0){ShowWindow(windows[0],9);SetForegroundWindow(windows[0]);return;}var edge=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),@"Microsoft\Edge\Application\msedge.exe");if(!File.Exists(edge))edge=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),@"Microsoft\Edge\Application\msedge.exe");if(File.Exists(edge))Process.Start(new ProcessStartInfo(edge,"--app="+Url+" --window-size=1320,940"){UseShellExecute=true});else Process.Start(new ProcessStartInfo(Url){UseShellExecute=true}); }
     [STAThread] static void Main(string[] args) {
         Application.EnableVisualStyles();Application.SetCompatibleTextRenderingDefault(false);

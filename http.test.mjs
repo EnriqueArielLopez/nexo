@@ -7,6 +7,7 @@ import os from 'node:os';
 import path from 'node:path';
 import {setTimeout as delay} from 'node:timers/promises';
 import {fileURLToPath} from 'node:url';
+import {createHmac} from 'node:crypto';
 import {Accounts} from './auth.mjs';
 import {Store} from './core.mjs';
 import {unzip} from './zip.mjs';
@@ -48,7 +49,9 @@ test('primera instalación: crear espacio, entrar, usar ejemplos y conservar ses
  assert.equal((await post('logout')).status,200);
  assert.equal((await fetch(origin+'/api/state',{headers:{cookie}})).status,401);
  const shutdown=readFileSync(path.join(dir,'.shutdown-token'),'utf8');assert.equal(shutdown.length,64);assert.ok(!JSON.stringify(session).includes(shutdown));
- const exited=new Promise(resolve=>child.once('exit',resolve));const quit=await fetch(origin+'/api/quit',{method:'POST',headers:{origin,'content-type':'application/json','x-csrf-token':session.csrf,'x-nexo-shutdown':shutdown},body:'{}'});assert.equal(quit.status,200);await exited;
+ const nonce='b'.repeat(32),proof=message=>createHmac('sha256',shutdown).update(message).digest('hex');const health=await(await fetch(origin+'/api/health',{headers:{'x-nexo-probe':nonce}})).json();assert.equal(health.proof,proof('nexo-health-v1:'+nonce));assert.notEqual(health.proof,proof('nexo-shutdown-v1'));
+ assert.equal((await fetch(origin+'/api/quit',{method:'POST',headers:{origin,'content-type':'application/json','x-csrf-token':session.csrf,'x-nexo-shutdown':health.proof},body:'{}'})).status,401,'una prueba de salud no concede permiso de cierre');
+ const exited=new Promise(resolve=>child.once('exit',resolve));const quit=await fetch(origin+'/api/quit',{method:'POST',headers:{origin,'content-type':'application/json','x-csrf-token':session.csrf,'x-nexo-shutdown':proof('nexo-shutdown-v1')},body:'{}'});assert.equal(quit.status,200);await exited;
 });
 
 test('HTTP real: acceso, planilla grande, edición, limpieza, restauración y Excel',async t=>{

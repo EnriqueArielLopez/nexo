@@ -17,6 +17,9 @@ de destinatarios en issues. El canal no implica un plazo de respuesta garantizad
 - Solo escucha en `127.0.0.1`; rechaza Host y Origin ajenos. Las operaciones de la
   web requieren sesión, JSON y token CSRF. El lanzador dispone de una capacidad
   de cierre privada, renovada en cada arranque y fuera del contenido web.
+  Antes de abrir la UI verifica una prueba HMAC del servidor con un desafío
+  aleatorio; declarar el nombre Nexo en el puerto local no alcanza. La clave
+  privada nunca viaja por HTTP y los permisos de salud/cierre se derivan separados.
 - Cookies HttpOnly/SameSite Strict y sesiones aleatorias guardadas como hashes.
   Contraseñas con sal individual y scrypt N=16384, r=8, p=5. Las antiguas se
   actualizan al iniciar sesión correctamente. Los fallos persisten en SQLite:
