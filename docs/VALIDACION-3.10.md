@@ -82,15 +82,28 @@ sobre una base que ya registró conversaciones mediante esta versión. Un rollba
 operativo debe conservar la protección o conciliar esos contactos. No restaurar
 una base antigua sobre el historial reciente.
 
-## Entrega
+## Entrega y publicación — 2026-11-04
 
-El PR #4 reúne correcciones e interfaz final. Se valida la rama en Local y con
-un portable aislado; después se integra a main y se genera desde allí el ZIP
-público. La instalación activa del titular no se reemplaza como parte de la
-publicación. Nexo no usa los servidores Development/Producción de ps-stack.
-
-Portable candidato con interfaz final: 52 entradas y 44 archivos coincidentes
-por SHA-256. Primer inicio y HTTP con 1.200 contactos correctos desde su propio
-Node 24.22.2. Checksum del candidato:
-`872c884dd7089c75fbe06ddc711942b3f8338b397cc4926a2b3a3ca01b29ca60`.
-Estado de publicación y checksum final: se registran después de verificar la release.
+- [PR #4](https://github.com/EnriqueArielLopez/nexo/pull/4) integrado en main,
+  revisión de código `ac5c3918a818246000b9c09e853914279524e143`, tag `v3.10.0`.
+- Main revalidado: 123/123 pruebas, 12/12 escenarios DOM y UI de acceso/cartera.
+  Portable reconstruido desde ese main, con Node 24.22.2 x64 y marca consistente
+  entre programa y lanzador. Sus dos smokes HTTP pasan: primer inicio limpio y
+  1.200 contactos con borradores, respaldos, cuotas y Excel. Estado en 35 ms en
+  esa ejecución puntual del portable; no es una garantía de latencia.
+- [Release pública 3.10.0](https://github.com/EnriqueArielLopez/nexo/releases/tag/v3.10.0),
+  marcada como Latest y sin estado draft/prerelease. ZIP Windows x64 de
+  35.491.752 bytes, con su archivo .sha256. Contiene 52 entradas, 44 archivos de
+  aplicación coincidentes por hash con el código probado. Sin bases, perfiles,
+  tokens, configuraciones personales ni QA. SHA-256:
+  `a6478fc88acf6e7b5a5830f2b40fab726b4ac9c7e02895b027278de6b430b528`.
+- Descarga pública del ZIP y checksum comprobada con curl sin autenticación:
+  el archivo descargado coincide con el publicado y con el portable validado.
+- Rama feature local y remota eliminada después de integrar y validar main.
+  Los dos servidores QA, el perfil Edge aislado y las pestañas creadas se cerraron.
+  Evidencias privadas de QA permanecen fuera de Git; las dos capturas del README
+  contienen únicamente datos ficticios.
+- Documentación actualizada: README, EMPEZA-ACA, arquitectura y este registro.
+  No se modificaron los ambientes de ps-stack ni la instalación activa personal.
+  Se conservan las releases anteriores. Para operar Instagram, cada persona
+  conecta su Chrome y recarga la extensión al actualizar; no se distribuyen sesiones.
