@@ -1,27 +1,26 @@
-name: Validar Nexo y portable Windows
+name: Verificar Nexo
 on:
   push:
     branches: [main, 'codex/**']
   pull_request:
+  workflow_dispatch:
 permissions:
   contents: read
 jobs:
-  windows:
+  tests:
     runs-on: windows-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: '24'
+          node-version: 24.x
       - run: npm test
-      - name: Compilar portable limpio
-        shell: powershell
-        run: ./build-portable.ps1 -OutputDirectory dist/Nexo
-      - uses: actions/upload-artifact@v4
-        with:
-          name: Nexo-Windows-portable
-          path: |
-            dist/Nexo-Windows-portable.zip
-            dist/Nexo-Windows-portable.zip.sha256
-          if-no-files-found: error
+      - name: Verificar lanzador Windows
+        shell: pwsh
+        run: |
+          $compiler=Join-Path $env:SystemRoot 'Microsoft.NET\Framework64\v4.0.30319\csc.exe'
+          & $compiler /nologo /target:exe /platform:x64 /main:LauncherHealthTests /reference:System.Windows.Forms.dll /reference:System.Drawing.dll /reference:System.Web.Extensions.dll /out:LauncherHealthTests.exe build\Launcher.cs build\LauncherHealthTests.cs
+          if($LASTEXITCODE -ne 0){exit $LASTEXITCODE}
+          & .\LauncherHealthTests.exe
+          exit $LASTEXITCODE

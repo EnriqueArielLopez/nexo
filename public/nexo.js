@@ -3,7 +3,7 @@ const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const norm=v=>String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
 let csrf,state,registerMode=false,countries=['AR','UY','ES'],draft=new Set(),view='all',selected=new Set(),activeLead=null,polling=false,toastTimer,searchAfterConnect=false,assistantLogKey='';
-const PAGE_BUILD='3.10.0';
+const PAGE_BUILD='3.11.0';
 let loginRetryUntil=0,loginRetryName='',loginTimer;
 const loginName=()=>String($('#loginForm').elements.name.value||'').trim().normalize('NFKC').toLowerCase();
 function updateLoginLock(){

@@ -5,11 +5,11 @@ import vm from 'node:vm';
 
 test('extensión: crea la ventana minimizada y recupera emulación de foco tras una desconexión',async()=>{
  const calls=[],listeners={};
- const context=vm.createContext({self:{NEXO:{port:18761,token:'FICTICIO'}},importScripts(){},Date,Promise,setTimeout,
+ const context=vm.createContext({self:{NEXO:{port:18761,token:'FICTICIO'}},importScripts(){},URL,Date,Promise,setTimeout,
   chrome:{storage:{session:{get:async()=>({}),set:async()=>{}}},
    windows:{create:async opts=>{calls.push(['create',opts]);return {id:7,tabs:[{id:9}]};},update:async(id,opts)=>calls.push(['window',opts])},
    tabs:{get:async()=>({windowId:7}),update:async()=>{throw Error('No debe activar una pestaña');},onRemoved:{addListener(){}}},
-   debugger:{attach:async()=>calls.push(['attach']),sendCommand:async(_,method,params)=>{calls.push([method,params]);return {};},onDetach:{addListener:fn=>listeners.detach=fn}},
+   debugger:{getTargets:async()=>[{tabId:9,url:'about:blank'}],attach:async()=>calls.push(['attach']),sendCommand:async(_,method,params)=>{calls.push([method,params]);return {};},onDetach:{addListener:fn=>listeners.detach=fn}},
    runtime:{onStartup:{addListener(){}},onInstalled:{addListener(){}}},alarms:{create(){},onAlarm:{addListener(){}}}}
  });
  const source=readFileSync(new URL('./chrome-extension/background.js',import.meta.url),'utf8').replace(/loop\(\);\s*$/,'');

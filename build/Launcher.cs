@@ -12,6 +12,7 @@ using System.Runtime.InteropServices;
 static class Launcher {
     internal const string Url = "http://127.0.0.1:18761";
     static string Root = AppDomain.CurrentDomain.BaseDirectory;
+    static string DataFolder { get { return Environment.GetEnvironmentVariable("NEXO_DATA_DIR") ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"NexoClientes","Datos"); } }
     internal static bool IsNexoHealth(string json) {
         try {
             var health=new JavaScriptSerializer().DeserializeObject(json) as System.Collections.Generic.Dictionary<string,object>;
@@ -29,7 +30,7 @@ static class Launcher {
     static System.Collections.Generic.List<IntPtr> Windows(){var found=new System.Collections.Generic.List<IntPtr>();EnumWindows((h,l)=>{var title=new StringBuilder(512);GetWindowText(h,title,title.Capacity);if(title.ToString().StartsWith("Nexo",StringComparison.OrdinalIgnoreCase)){uint pid;GetWindowThreadProcessId(h,out pid);try{var name=Process.GetProcessById((int)pid).ProcessName;if(name=="msedge"||name=="chrome")found.Add(h);}catch{}}return true;},IntPtr.Zero);return found;}
     static void CloseWindows(){foreach(var h in Windows())PostMessage(h,0x10,IntPtr.Zero,IntPtr.Zero);}
     static string Read(string route,int timeout=1200) { var req=(HttpWebRequest)WebRequest.Create(Url+route);req.Timeout=timeout;req.Proxy=null;using(var r=req.GetResponse())using(var sr=new StreamReader(r.GetResponseStream()))return sr.ReadToEnd(); }
-    internal static void Quit() { try { var data=new JavaScriptSerializer().DeserializeObject(Read("/api/session")) as System.Collections.Generic.Dictionary<string,object>;var req=(HttpWebRequest)WebRequest.Create(Url+"/api/quit");req.Proxy=null;req.Timeout=4000;req.Method="POST";req.ContentType="application/json";req.Headers.Add("x-csrf-token",(string)data["csrf"]);byte[] bytes=System.Text.Encoding.UTF8.GetBytes("{}");req.ContentLength=bytes.Length;using(var s=req.GetRequestStream())s.Write(bytes,0,bytes.Length);using(var r=req.GetResponse()){} }catch{} }
+    internal static void Quit() { try { var data=new JavaScriptSerializer().DeserializeObject(Read("/api/session")) as System.Collections.Generic.Dictionary<string,object>;var req=(HttpWebRequest)WebRequest.Create(Url+"/api/quit");req.Proxy=null;req.Timeout=4000;req.Method="POST";req.ContentType="application/json";req.Headers.Add("x-csrf-token",(string)data["csrf"]);req.Headers.Add("x-nexo-shutdown",File.ReadAllText(Path.Combine(DataFolder,".shutdown-token")).Trim());byte[] bytes=System.Text.Encoding.UTF8.GetBytes("{}");req.ContentLength=bytes.Length;using(var s=req.GetRequestStream())s.Write(bytes,0,bytes.Length);using(var r=req.GetResponse()){} }catch{} }
     internal static void Open() {var windows=Windows();if(windows.Count>0){ShowWindow(windows[0],9);SetForegroundWindow(windows[0]);return;}var edge=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),@"Microsoft\Edge\Application\msedge.exe");if(!File.Exists(edge))edge=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),@"Microsoft\Edge\Application\msedge.exe");if(File.Exists(edge))Process.Start(new ProcessStartInfo(edge,"--app="+Url+" --window-size=1320,940"){UseShellExecute=true});else Process.Start(new ProcessStartInfo(Url){UseShellExecute=true}); }
     [STAThread] static void Main(string[] args) {
         Application.EnableVisualStyles();Application.SetCompatibleTextRenderingDefault(false);
@@ -43,7 +44,7 @@ static class Launcher {
             if(!File.Exists(node)||!File.Exists(entry))throw new Exception("Extraé la carpeta completa del ZIP antes de abrir Nexo.exe. No muevas solo el ejecutable.");
             splash.Show();Application.DoEvents();
             var info=new ProcessStartInfo(node,"--disable-warning=ExperimentalWarning \""+entry+"\""){WorkingDirectory=Path.Combine(Root,"app"),UseShellExecute=false,CreateNoWindow=true,RedirectStandardError=true,RedirectStandardOutput=true};
-            info.EnvironmentVariables["HOTEL_DATA_DIR"]=Environment.GetEnvironmentVariable("NEXO_DATA_DIR") ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"NexoClientes","Datos");info.EnvironmentVariables["PORT"]="18761";
+            info.EnvironmentVariables["HOTEL_DATA_DIR"]=DataFolder;info.EnvironmentVariables["PORT"]="18761";
             server=Process.Start(info);server.ErrorDataReceived+=(s,e)=>{};server.OutputDataReceived+=(s,e)=>{};server.BeginErrorReadLine();server.BeginOutputReadLine();
             bool ready=false;for(int i=0;i<45;i++){Application.DoEvents();if(Ready()){ready=true;break;}if(server.HasExited)break;Thread.Sleep(200);}
             if(!ready)throw new Exception("No se pudo abrir Nexo. Cerrá la versión anterior si sigue abierta y volvé a intentar. El puerto local 18761 debe estar disponible.");

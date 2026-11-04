@@ -3,6 +3,8 @@ import {personalize} from './templates.mjs';
 import {websiteProfiles} from './website-prospects.mjs';
 import dns from 'node:dns/promises';
 import net from 'node:net';
+import http from 'node:http';
+import https from 'node:https';
 import {COUNTRIES} from './geography.mjs';
 import {handle,httpUrl,defaults} from './core.mjs';
 import {isNewProspect} from './campaign.mjs';
@@ -27,23 +29,27 @@ export function parseSearchResults(html){
  return output.slice(0,30);
 }
 export function isPublicAddress(address){
- if(net.isIPv4(address)){const [a,b]=address.split('.').map(Number);return !(a===0||a===10||a===127||a>=224||a===169&&b===254||a===172&&b>=16&&b<=31||a===192&&(b===168||b===0)||a===100&&b>=64&&b<=127||a===198&&(b===18||b===19));}
- if(net.isIPv6(address)){const v=address.toLowerCase();return !v.startsWith('::')&&!/^(fc|fd|fe[89ab]|ff)/.test(v);}
+ if(net.isIPv4(address)){const [a,b,c]=address.split('.').map(Number);return !(a===0||a===10||a===127||a>=224||a===169&&b===254||a===172&&b>=16&&b<=31||a===192&&(b===168||b===0||b===2)||a===100&&b>=64&&b<=127||a===198&&(b===18||b===19||b===51&&c===100)||a===203&&b===0&&c===113);}
+ if(net.isIPv6(address)){const v=address.toLowerCase(),parts=v.split(':');const first=parseInt(parts[0],16),second=parseInt(parts[1]||'0',16);return first>=0x2000&&first<=0x3fff&&first!==0x2002&&!(first===0x2001&&(second<0x200||second===0xdb8));}
  return false;
 }
-export async function publicUrl(value){
+async function resolvePublic(value){
  const u=new URL(value);if(!['https:','http:'].includes(u.protocol)||u.username||u.password||u.port&&!['80','443'].includes(u.port)||u.hostname==='localhost'||u.hostname.endsWith('.local'))throw Error('La búsqueda solo consulta sitios web públicos.');
- const records=await dns.lookup(u.hostname.replace(/^\[|\]$/g,''),{all:true});if(!records.length||records.some(r=>!isPublicAddress(r.address)))throw Error('Se omitió una dirección privada.');return u;
+ const records=await dns.lookup(u.hostname.replace(/^\[|\]$/g,''),{all:true});if(!records.length||records.some(r=>!isPublicAddress(r.address)))throw Error('Se omitió una dirección privada.');return {url:u,records};
 }
+export async function publicUrl(value){return (await resolvePublic(value)).url;}
+// Resolve once and pin that validated address to the socket. A second DNS lookup must never choose a private address.
+export function pinnedLookup(records){if(!records.length||records.some(r=>!isPublicAddress(r.address)))throw Error('Se omitió una dirección privada.');const record={...records[0]};return (_host,options,callback)=>{if(options?.all)callback(null,[record]);else callback(null,record.address,record.family);};}
+function publicResponse(u,records,signal){return new Promise((resolve,reject)=>{const req=(u.protocol==='https:'?https:http).get(u,{agent:false,lookup:pinnedLookup(records),signal,headers:{'user-agent':'NexoClientes/3.11 (public business research)','accept':'text/html,application/xhtml+xml','accept-encoding':'identity'}},resolve);req.on('error',reject);});}
 export async function fetchPublic(value,{signal,timeoutMs=12000}={}){
  let url=value;
  for(let redirects=0;redirects<5;redirects++){
-  const u=await publicUrl(url);const response=await fetch(u,{redirect:'manual',headers:{'user-agent':'NexoClientes/3.4 (public business research)','accept':'text/html,application/xhtml+xml'},signal:signal?AbortSignal.any([signal,AbortSignal.timeout(timeoutMs)]):AbortSignal.timeout(timeoutMs)});
-  if([301,302,303,307,308].includes(response.status)){const location=response.headers.get('location');await response.body?.cancel();if(!location)throw Error('Redirección sin destino.');url=new URL(location,u).href;continue;}
-  if(response.status===429||response.status===403){await response.body?.cancel();const e=Error('El sitio limitó las consultas públicas. Volvé a intentar más tarde.');e.code='WEB_BLOCKED';throw e;}
-  if(!response.ok){await response.body?.cancel();throw Error('El sitio respondió HTTP '+response.status);}
-  if(!/text\/html|application\/xhtml\+xml/i.test(response.headers.get('content-type')||'')){await response.body?.cancel();throw Error('La fuente no es una página HTML.');}
-  let size=0,chunks=[];for await(const chunk of response.body){size+=chunk.length;if(size>1500000)throw Error('La página supera el tamaño de lectura.');chunks.push(chunk);}
+  const {url:u,records}=await resolvePublic(url),deadline=AbortSignal.timeout(timeoutMs);const response=await publicResponse(u,records,signal?AbortSignal.any([signal,deadline]):deadline);
+  if([301,302,303,307,308].includes(response.statusCode)){const location=response.headers.location;response.destroy();if(!location)throw Error('Redirección sin destino.');url=new URL(location,u).href;continue;}
+  if(response.statusCode===429||response.statusCode===403){response.destroy();const e=Error('El sitio limitó las consultas públicas. Volvé a intentar más tarde.');e.code='WEB_BLOCKED';throw e;}
+  if(response.statusCode<200||response.statusCode>=300){response.destroy();throw Error('El sitio respondió HTTP '+response.statusCode);}
+  if(!/text\/html|application\/xhtml\+xml/i.test(response.headers['content-type']||'')){response.destroy();throw Error('La fuente no es una página HTML.');}
+  let size=0,chunks=[];for await(const chunk of response){size+=chunk.length;if(size>1500000){response.destroy();throw Error('La página supera el tamaño de lectura.');}chunks.push(chunk);}
   return {url:u.href,html:Buffer.concat(chunks).toString('utf8')};
  }
  throw Error('Demasiadas redirecciones.');

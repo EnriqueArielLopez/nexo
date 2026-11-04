@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {spawn} from 'node:child_process';
 import net from 'node:net';
-import {mkdtempSync,rmSync} from 'node:fs';
+import {mkdtempSync,rmSync,readFileSync} from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import {setTimeout as delay} from 'node:timers/promises';
@@ -25,14 +25,30 @@ test('primera instalación: crear espacio, entrar, usar ejemplos y conservar ses
  assert.equal(register.status,200);const cookie=register.headers.get('set-cookie').split(';')[0];
  const headers={cookie,origin,'content-type':'application/json','x-csrf-token':session.csrf};
  const post=(route,body={})=>fetch(origin+'/api/'+route,{method:'POST',headers,body:JSON.stringify(body)});
+ assert.equal((await fetch(origin+'/api/quit',{method:'POST',headers:{origin,'content-type':'application/json','x-csrf-token':session.csrf},body:'{}'})).status,401,'el cierre necesita sesión o capacidad privada del lanzador');
+ assert.equal((await fetch(origin+'/api/backup')).status,401);
+ assert.equal((await fetch(origin+'/api/session',{headers:{origin:'https://sitio-ajeno.example'}})).status,403);
+ assert.equal((await fetch(origin+'/api/ext/poll',{headers:{'x-nexo-token':'ficticio'}})).status,401);
+ assert.equal((await fetch(origin+'/api/settings',{method:'POST',headers:{...headers,'x-csrf-token':'incorrecto'},body:'{}'})).status,403);
+ assert.equal((await fetch(origin+'/api/settings',{method:'POST',headers,body:'null'})).status,400);
+ assert.equal((await fetch(origin+'/api/settings',{method:'POST',headers,body:JSON.stringify({offer:'x'.repeat(66000)})})).status,413);
+ assert.equal((await post('settings',{smtpHost:'smtp.evil.example'})).status,400,'no se pueden redirigir contraseñas guardadas desde ajustes generales');
+ for(const route of ['/data/cuentas.sqlite','/.shutdown-token','/../auth.mjs'])assert.equal((await fetch(origin+route,{headers:{cookie}})).status,404);
  let state=await(await fetch(origin+'/api/state',{headers:{cookie}})).json();
  assert.equal(state.user.name,'Espacio Ficticio');assert.equal(state.leads.length,0);assert.equal(state.chromeConnected,false);assert.equal(state.email.configured,false);
  assert.equal((await post('demo')).status,200);
  state=await(await fetch(origin+'/api/state',{headers:{cookie}})).json();assert.equal(state.leads.length,3);assert.ok(state.leads.every(l=>l.demo));assert.equal(state.history.length,0);
+ await post('settings',{offer:'OFERTA PRIVADA FICTICIA A'});
+ const second=await fetch(origin+'/api/register',{method:'POST',headers,body:JSON.stringify({name:'Otro espacio QA',password:'clave-ficticia-311'})});assert.equal(second.status,200);
+ const cookieB=second.headers.get('set-cookie').split(';')[0];
+ const other=await(await fetch(origin+'/api/state?user='+state.user.id,{headers:{cookie:cookieB}})).json();assert.equal(other.leads.length,0);assert.equal(other.settings.offer,'');
+ const backup=await(await fetch(origin+'/api/backup',{headers:{cookie:cookieB}})).text();assert.ok(!backup.includes('OFERTA PRIVADA FICTICIA A'));assert.ok(!backup.includes('clave-ficticia-311'));assert.ok(!backup.includes('smtpPass'));
  const font=await fetch(origin+'/fonts/Manrope-600.ttf');assert.equal(font.status,200);assert.ok((await font.arrayBuffer()).byteLength>10000);
  assert.equal((await(await fetch(origin+'/api/session',{headers:{cookie}})).json()).user.name,'Espacio Ficticio');
  assert.equal((await post('logout')).status,200);
  assert.equal((await fetch(origin+'/api/state',{headers:{cookie}})).status,401);
+ const shutdown=readFileSync(path.join(dir,'.shutdown-token'),'utf8');assert.equal(shutdown.length,64);assert.ok(!JSON.stringify(session).includes(shutdown));
+ const exited=new Promise(resolve=>child.once('exit',resolve));const quit=await fetch(origin+'/api/quit',{method:'POST',headers:{origin,'content-type':'application/json','x-csrf-token':session.csrf,'x-nexo-shutdown':shutdown},body:'{}'});assert.equal(quit.status,200);await exited;
 });
 
 test('HTTP real: acceso, planilla grande, edición, limpieza, restauración y Excel',async t=>{
@@ -54,7 +70,7 @@ test('HTTP real: acceso, planilla grande, edición, limpieza, restauración y Ex
  const post=async(route,body={})=>{const r=await fetch(origin+'/api/'+route,{method:'POST',headers,body:JSON.stringify(body)});return {status:r.status,body:await r.json()};};
  const before=performance.now(),r=await fetch(origin+'/api/state',{headers:{cookie}}),state=await r.json();
  t.diagnostic(`Estado con 1200 clientes: ${Math.round(performance.now()-before)} ms`);
- assert.equal(state.leads.length,1200);assert.equal(state.build,'3.10.0');assert.equal(state.history.length,2);assert.equal(state.leads.find(l=>l.id===previousId).eventStatus,'contacted');assert.equal(state.counts.daily,1);
+ assert.equal(state.leads.length,1200);assert.equal(state.build,'3.11.0');assert.equal(state.history.length,2);assert.equal(state.leads.find(l=>l.id===previousId).eventStatus,'contacted');assert.equal(state.counts.daily,1);
  assert.equal((await fetch(origin+'/api/update',{method:'POST',headers:{cookie,'content-type':'application/json'},body:'{}'})).status,403);
  assert.equal((await fetch(origin+'/api/state',{headers:{cookie,origin:'https://example.com'}})).status,403);
  const id=state.leads.find(l=>!l.eventStatus).id;
