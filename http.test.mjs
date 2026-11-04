@@ -29,7 +29,7 @@ test('HTTP real: acceso, planilla grande, edición, limpieza, restauración y Ex
  const post=async(route,body={})=>{const r=await fetch(origin+'/api/'+route,{method:'POST',headers,body:JSON.stringify(body)});return {status:r.status,body:await r.json()};};
  const before=performance.now(),r=await fetch(origin+'/api/state',{headers:{cookie}}),state=await r.json();
  t.diagnostic(`Estado con 1200 clientes: ${Math.round(performance.now()-before)} ms`);
- assert.equal(state.leads.length,1200);assert.equal(state.build,'3.9.0');assert.equal(state.history.length,1);
+ assert.equal(state.leads.length,1200);assert.equal(state.build,'3.9.1');assert.equal(state.history.length,1);
  assert.equal((await fetch(origin+'/api/update',{method:'POST',headers:{cookie,'content-type':'application/json'},body:'{}'})).status,403);
  assert.equal((await fetch(origin+'/api/state',{headers:{cookie,origin:'https://example.com'}})).status,403);
  const id=state.leads.find(l=>!l.eventStatus).id;
@@ -41,4 +41,11 @@ test('HTTP real: acceso, planilla grande, edición, limpieza, restauración y Ex
  const restored=await post('results/restore');assert.equal(restored.body.state.leads.length,1200);assert.equal(restored.body.state.leads.find(l=>l.id===id).message,'Borrador QA conservado');
  const excel=await fetch(origin+'/api/excel',{headers:{cookie}});assert.equal(excel.status,200);const bytes=new Uint8Array(await excel.arrayBuffer());assert.deepEqual([...bytes.slice(0,2)],[80,75]);
  assert.equal((await post('logout')).status,200);assert.equal((await fetch(origin+'/api/state',{headers:{cookie}})).status,401);
+ const attempt=password=>fetch(origin+'/api/login',{method:'POST',headers:{origin,'content-type':'application/json','x-csrf-token':session.csrf},body:JSON.stringify({name:'QA FICTICIO',password})});
+ for(let i=0;i<4;i++){const failed=await attempt('incorrecta');assert.equal(failed.status,400);assert.equal(failed.headers.get('set-cookie'),null);}
+ const blocked=await attempt('incorrecta'),error=await blocked.json();
+ assert.equal(blocked.status,429);assert.equal(error.code,'LOGIN_LOCKED');assert.equal(error.retryAfterSeconds,900);assert.equal(blocked.headers.get('retry-after'),'900');assert.equal(blocked.headers.get('set-cookie'),null);
+ const during=await attempt('qa-sin-datos-reales'),locked=await during.json();
+ assert.equal(during.status,429);assert.equal(locked.retryAt,error.retryAt,'la contraseña correcta no omite ni prolonga la espera');
+ assert.equal((await(await fetch(origin+'/api/session')).json()).user,null);
 });

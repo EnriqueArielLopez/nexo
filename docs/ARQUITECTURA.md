@@ -11,6 +11,13 @@ en nube ni integración con Docker, Nginx, Login o RBAC de Practical Solutions.
 La UI usa POST con sesión, comprobación de origen y CSRF; las conexiones de la
 extensión usan un token independiente por usuario, solo sobre loopback.
 
+El ingreso admite cinco fallos por nombre normalizado y bloquea por 15 minutos.
+Los intentos durante el bloqueo no prolongan su vencimiento; una vez vencido se
+reinicia el contador. El bloqueo responde HTTP 429 con `Retry-After` y su fecha
+de vencimiento. La UI muestra el tiempo restante y no reintenta automáticamente.
+Los contadores son en memoria, como en versiones anteriores; no hay cambios de
+credenciales, cookies, sesiones ni esquema de la base por esta corrección.
+
 ## Datos y rendimiento
 
 `core.mjs` conserva contactos, eventos, programaciones y jobs. La actualización

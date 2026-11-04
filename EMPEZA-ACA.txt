@@ -1,4 +1,4 @@
-NEXO · CLIENTES 3.9
+NEXO · CLIENTES 3.9.1
 
 INSTALAR EN WINDOWS
 1. Descargá Nexo-Windows-portable.zip desde:
@@ -14,6 +14,12 @@ INSTALAR EN WINDOWS
 
 Requisitos: Windows 10/11 x64, Microsoft Edge, Chrome para envíos e Internet.
 El ejecutable no tiene firma digital. Descargalo solo de este repositorio.
+
+INGRESAR A TU CUENTA
+Usá el nombre de la cuenta local que creaste, sin @, y tu contraseña.
+El botón Mostrar permite revisar la escritura. Si fallás cinco veces,
+Nexo espera 15 minutos y muestra cuánto falta. Esperá a que termine;
+no hace falta cerrar el programa. Al vencer, el contador empieza de nuevo.
 
 1 · BUSCAR
 Pegá tu Instagram y completá qué ofrecés, rubro, país y ciudad.

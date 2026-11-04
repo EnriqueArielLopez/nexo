@@ -569,3 +569,5 @@ button[aria-busy="true"]::after{content:'';display:inline-block;vertical-align:m
 button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #9272ec;outline-offset:3px}
 @media(max-width:900px){.task-board{align-items:flex-start;flex-direction:column}.search-preferences{grid-template-columns:1fr}.sheet-footer{flex-wrap:wrap}.pagination{width:100%;justify-content:center}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+
+.password-field{position:relative;margin:8px 0 15px}.password-field input{padding-right:88px}.password-field button{position:absolute;right:12px;top:50%;transform:translateY(-50%);border:0;background:transparent;color:var(--purple);font-size:11px;padding:5px}.password-field button:active{transform:translateY(-50%)}.login-card .login-name-hint{margin:-8px 0 14px;text-align:left}.login-card #loginLock{color:var(--purple-dark);font-weight:600}
