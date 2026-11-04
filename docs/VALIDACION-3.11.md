@@ -30,6 +30,8 @@ para eludir esta regla, porque perdería memoria de contactos y bajas.
 - `npm test`: 133 pruebas, sin fallos ni omisiones, incluyendo seguridad y las
   regresiones previas de duplicados, borradores, colas y OAuth.
 - Lanzador Windows compilado: 14 comprobaciones de salud e identidad.
+  Dominio de navegador privado por instalación y rechazo del alias genérico,
+  para aislar cookies entre aplicaciones locales; login comprobado en Chromium.
   Integración C# contra HTTP de QA: servidor genuino aceptado, clave de otra
   instalación rechazada y cierre privado completado sin abrir ventanas.
 - Smoke HTTP del portable con Node incluido: primera instalación, dos espacios

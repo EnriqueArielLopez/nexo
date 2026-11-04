@@ -92,7 +92,8 @@ $env:HOTEL_DATA_DIR=Join-Path (Get-Location) 'qa/datos-aislados'
 npm start
 ```
 
-La UI queda en `http://127.0.0.1:18779`. `HOTEL_DATA_DIR` aísla los datos del
+Abrí la URL `http://nexo-….localhost:18779` indicada al iniciar. La UI usa un
+dominio privado de esta instalación para aislar sus cookies de otras apps locales. `HOTEL_DATA_DIR` aísla los datos del
 servidor; `NEXO_DATA_DIR` sirve para QA del ejecutable. El puerto normal es 18761;
 la extensión distribuida usa ese puerto. No usar datos/credenciales reales en QA.
 

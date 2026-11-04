@@ -20,6 +20,10 @@ de destinatarios en issues. El canal no implica un plazo de respuesta garantizad
   Antes de abrir la UI verifica una prueba HMAC del servidor con un desafío
   aleatorio; declarar el nombre Nexo en el puerto local no alcanza. La clave
   privada nunca viaja por HTTP y los permisos de salud/cierre se derivan separados.
+- El ejecutable abre un dominio `nexo-<identidad>.localhost` estable y propio de
+  la instalación, para no compartir cookies con otras aplicaciones de loopback.
+  La identidad se deriva de `.installation-key` y no se publica en endpoints
+  anónimos. Los accesos de navegador por el alias 127.0.0.1 se rechazan.
 - Cookies HttpOnly/SameSite Strict y sesiones aleatorias guardadas como hashes.
   Contraseñas con sal individual y scrypt N=16384, r=8, p=5. Las antiguas se
   actualizan al iniciar sesión correctamente. Los fallos persisten en SQLite:
