@@ -75,3 +75,26 @@ de supresión de datos por titular. La retención y los derechos deben gestionar
 también en respaldos, adjuntos y proveedores. Ver [PRIVACIDAD.md](../PRIVACIDAD.md).
 No se ofrece garantía de seguridad absoluta, cumplimiento legal o ausencia de
 demandas; el uso comercial/para terceros requiere evaluación de su caso.
+
+## Publicación verificada
+
+- PRs [#5](https://github.com/EnriqueArielLopez/nexo/pull/5) y
+  [#6](https://github.com/EnriqueArielLopez/nexo/pull/6) integrados y main
+  revalidado: 133 pruebas sin fallos. Commit del código distribuido:
+  `74dfebc118458f5200aa58124e43fa474de8aa61`; tag `v3.11.0`.
+- [Release pública](https://github.com/EnriqueArielLopez/nexo/releases/tag/v3.11.0)
+  publicada el 4 de noviembre de 2026. ZIP generado desde main, 35.501.231 bytes.
+- Descarga anónima completa desde GitHub y checksum publicado comprobados:
+  `277c7dcb77e8f4290bf9f893bc9d137104a335af3e79f9457000aee4529b76f9`.
+- Portable final con su Node incluido: dos smokes HTTP sin fallos y 44 archivos
+  de app contrastados con fuentes. Pruebas de integridad del ZIP y exclusión de
+  datos privados completadas.
+- Ramas locales/remotas `codex/nexo-seguridad` y `codex/nexo-identidad-local`
+  eliminadas después del merge y la validación de main.
+- Instancias y pestañas propias de QA cerradas. No se actualizaron instalaciones
+  activas ni se usaron cuentas de destinatarios reales. Los documentos operativos
+  son los de este repo: Nexo sigue fuera de la infraestructura de servidores.
+
+El análisis de patrones de claves se extendió también al historial Git sin
+coincidencias para los patrones revisados; no sustituye la rotación ante una
+exposición conocida ni detecta todos los tipos de secreto.
