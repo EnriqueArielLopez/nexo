@@ -137,5 +137,9 @@ La ventana nativa del escritorio sigue sin poder comprobarse por control visual:
 falló la identificación de la ventana, el arranque mediante esa herramienta
 (`ShellExecuteW returned 2`) y venció su autorización de acceso a la carpeta abierta.
 Se dejó una sesión funcional en el navegador integrado y se reabrió Nexo mediante
-su lanzador instalado. Queda identificar el mensaje exacto informado en la ventana
-del escritorio si el rechazo continúa allí.
+su lanzador instalado. El mensaje confirmado por el usuario fue el bloqueo temporal por intentos
+fallidos. Se realizó una parada completa del servidor y su lanzador antes de
+reabrir Nexo, dejando una sola instancia. Después del reinicio se comprobaron
+login HTTP 200 y carga autenticada de la cuenta HTTP 200, sin cambiar contraseña
+ni datos. La nueva prueba visual no pudo repetirse porque la herramienta de
+navegador informó `browser.user is unavailable`.
