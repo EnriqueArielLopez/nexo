@@ -106,3 +106,8 @@ cuál podrá consultar. El conector no elige otra cuenta automáticamente.
 No se garantiza ausencia de incidentes, restricciones del proveedor o demandas.
 Para uso comercial o para terceros, revisá las obligaciones de datos personales
 y las condiciones de los proveedores según tu caso.
+
+Abrí Nexo desde Nexo.exe: la dirección nexo-<identidad>.localhost es local
+y propia de tu instalación. No usa un servidor en Internet. Después de
+actualizar puede pedirte ingresar de nuevo; luego conserva la sesión según
+tu elección. No compartas .installation-key ni .shutdown-token.

@@ -2,7 +2,9 @@
 
 ## Escritorio independiente
 
-El ejecutable Windows inicia Node en loopback (`127.0.0.1:18761`) y abre la UI.
+El ejecutable Windows inicia Node en loopback (`127.0.0.1:18761`) y abre la UI en un dominio privado `nexo-<identidad>.localhost`.
+La identidad persiste en `.installation-key`; los endpoints de control del
+lanzador y la extensión usan loopback sin compartir las cookies del navegador.
 Su icono de bandeja conserva el proceso cuando se cierra la ventana. Salir de
 Nexo detiene búsquedas y tandas después de la operación en curso. No hay servidor
 en nube ni integración con Docker, Nginx, Login o RBAC de Practical Solutions.
@@ -157,7 +159,9 @@ con la cuenta real y destinatarios revisados antes de operar una campaña.
 ## Seguridad 3.11
 
 El cierre requiere sesión o el token privado de `.shutdown-token`, renovado al
-arrancar y leído por el lanzador; no se sirve por HTTP. La extensión 1.3 limita
+arrancar y leído por el lanzador; no se sirve por HTTP. El lanzador valida
+además una respuesta HMAC a un desafío aleatorio antes de abrir la UI. La
+capacidad de cierre se deriva por separado: la clave privada no viaja por HTTP. La extensión 1.3 limita
 comandos, verifica ventana/URL y devuelve presencia de sesión sin cookies reales.
 La lectura pública fija DNS al socket y vuelve a validar redirecciones. SMTP
 valida sobres/encabezados y exige TLS, y el cambio de destino exige la clave.

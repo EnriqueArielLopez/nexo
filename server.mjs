@@ -14,7 +14,7 @@ import {spawn} from 'node:child_process';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {randomBytes,timingSafeEqual} from 'node:crypto';
+import {randomBytes,timingSafeEqual,createHmac} from 'node:crypto';
 import {Store,day,handle} from './core.mjs';
 import {Claude,Instagram} from './providers.mjs';
 import {Accounts} from './auth.mjs';
@@ -29,13 +29,18 @@ import {runSchedules} from './scheduler.mjs';
 const BUILD='3.11.0';
 const root=path.dirname(fileURLToPath(import.meta.url));
 const data=path.resolve(process.env.HOTEL_DATA_DIR||path.join(root,'data'));
-const port=Number(process.env.PORT||18761),origin=`http://127.0.0.1:${port}`;
+const port=Number(process.env.PORT||18761),loopback=`http://127.0.0.1:${port}`;
 const accounts=new Accounts(data),budget=new AccountBudget(path.join(data,'cupos-instagram.sqlite')),contexts=new Map();
+const installationFile=path.join(data,'.installation-key');let installationKey;
+try{installationKey=await fs.readFile(installationFile,'utf8');}catch(e){if(e.code!=='ENOENT')throw e;installationKey=randomBytes(32).toString('hex');try{await fs.writeFile(installationFile,installationKey,{flag:'wx',mode:0o600});}catch(e){if(e.code!=='EEXIST')throw e;installationKey=await fs.readFile(installationFile,'utf8');}}
+if(!/^[a-f0-9]{64}$/.test(installationKey))throw Error('La identidad local de Nexo no es válida.');
+const uiHost=`nexo-${createHmac('sha256',installationKey).update('nexo-origin-v1').digest('hex').slice(0,32)}.localhost:${port}`,origin=`http://${uiHost}`;
 const extensions=new Extensions(data,path.join(root,'chrome-extension'),port);await extensions.load();
 async function chromePath(){const local=process.env.LOCALAPPDATA||'';for(const root of [process.env.ProgramFiles,process.env['ProgramFiles(x86)'],local].filter(Boolean)){const p=path.join(root,'Google','Chrome','Application','chrome.exe');try{await fs.access(p);return p;}catch{}}return '';}
 let instagramService='',instagramServiceError='';try{instagramService=await loadInstagramService(data);}catch(e){instagramServiceError=e.message;}
 const csrf=randomBytes(32).toString('hex'),shutdownToken=randomBytes(32).toString('hex');let stopping=false;
-const canStop=req=>{const given=Buffer.from(String(req.headers['x-nexo-shutdown']||'')),own=Buffer.from(shutdownToken);return given.length===own.length&&timingSafeEqual(given,own);};
+const localProof=message=>createHmac('sha256',shutdownToken).update(message).digest('hex');
+const canStop=req=>{const given=Buffer.from(String(req.headers['x-nexo-shutdown']||'')),own=Buffer.from(localProof('nexo-shutdown-v1'));return given.length===own.length&&timingSafeEqual(given,own);};
 const cookie=(token,remember=true)=>`nexo_session=${token}; HttpOnly; SameSite=Strict; Path=/${remember?'; Max-Age=604800':''}`;
 function json(res,v,status=200){res.writeHead(status,{'content-type':'application/json; charset=utf-8'});res.end(JSON.stringify(v));}
 async function body(req){const limit=/^\/api\/(import|attachment)$/.test(req.url)?12e6:req.url==='/api/ext/result'?2e6:65536;const tooLarge=()=>Object.assign(Error('La solicitud supera el tamaño permitido.'),{status:413});if(Number(req.headers['content-length'])>limit)throw tooLarge();let size=0,chunks=[];for await(const chunk of req){size+=chunk.length;if(size>limit)throw tooLarge();chunks.push(chunk);}let value;try{value=JSON.parse(Buffer.concat(chunks).toString()||'{}');}catch{throw Error('JSON inválido.');}if(!value||Array.isArray(value)||typeof value!=='object')throw Error('La solicitud debe ser un objeto JSON.');return value;}
@@ -73,9 +78,9 @@ try{const route=new URL(req.url,origin).pathname;
   if(req.method==='POST'&&route==='/api/ext/result'){bridge.result(await body(req));return json(res,{ok:true});}
   return json(res,{error:'No encontrado'},404);
  }
- if(req.headers.host!==`127.0.0.1:${port}`||req.headers.origin&&req.headers.origin!==origin)return json(res,{error:'Origen no permitido'},403);const user=accounts.resolve(req.headers.cookie);
+ if(![uiHost,`127.0.0.1:${port}`].includes(req.headers.host)||req.headers.origin&&![origin,loopback].includes(req.headers.origin)||req.headers.host===`127.0.0.1:${port}`&&req.headers['sec-fetch-site']&&route!=='/api/health')return json(res,{error:'Origen no permitido. Abrí Nexo desde su ejecutable o la URL local indicada al iniciar.'},403);const user=accounts.resolve(req.headers.cookie);
  if(req.method==='GET'){
-  if(route==='/api/health')return json(res,{ok:true,app:'nexo',version:BUILD,build:BUILD});
+  if(route==='/api/health'){const nonce=String(req.headers['x-nexo-probe']||'');return json(res,{ok:true,app:'nexo',version:BUILD,build:BUILD,...(/^[a-f0-9]{32}$/.test(nonce)?{proof:localProof('nexo-health-v1:'+nonce)}:{})});}
   if(route==='/api/session')return json(res,{csrf,user:user?{id:user.id,name:user.name}:null,hasAccounts:accounts.count()>0});
   if(staticFiles[route]){const [file,type]=staticFiles[route];res.writeHead(200,{'content-type':type});return res.end(await fs.readFile(path.join(root,'public',file)));}
   if(!user)return json(res,{error:'Iniciá sesión en tu espacio de Nexo.'},401);const c=await context(user);
