@@ -1,6 +1,6 @@
 # Datos y uso responsable
 
-Estado: Nexo 3.11.0, 4 de noviembre de 2026. Este documento describe el programa
+Estado: Nexo 3.12.0, 5 de noviembre de 2026. Este documento describe el programa
 distribuido; no certifica el cumplimiento legal de una campaña o de un servicio.
 
 ## Qué guarda y dónde
@@ -14,6 +14,34 @@ navegador. Cambiar `NEXO_DATA_DIR`/`HOTEL_DATA_DIR` cambia esa ubicación.
 El código distribuido no incorpora analítica ni envía una copia de la base al
 autor. Cada persona administra sus propios datos y conexiones. Nexo no requiere
 una cuenta central del autor para usar la planilla o la búsqueda pública.
+
+## Versión web y móvil
+
+La agenda se conserva en IndexedDB del navegador, sin contraseña propia ni
+sincronización automática. Quien pueda abrir ese perfil del navegador puede
+consultarla. No guardar claves de Instagram, correo o buscadores en ella.
+Los datos importados se procesan en el dispositivo y no se suben a Nexo.
+
+Guardar una copia descarga un JSON con preferencias, contactos y estados;
+exportar CSV permite abrir la agenda en una planilla. Son archivos sin cifrado.
+Borrar los datos del navegador, usar almacenamiento temporal o perder el
+perfil del dispositivo puede eliminar la agenda: conservar respaldos privados.
+No se garantiza persistencia permanente del almacenamiento del navegador.
+
+El alojamiento recibe las conexiones HTTP habituales necesarias para servir
+la aplicación. No hay endpoint de subida de agendas ni analítica añadida.
+La búsqueda externa transmite al buscador el rubro y zona elegidos, no la agenda.
+La búsqueda integrada está deshabilitada mientras no se configure una API
+servidor autorizada. Si se habilita, transmite solo filtros de rubro y zona;
+usa límites por minuto/día/globales, caché de resultados públicos y contadores
+con identificadores efímeros derivados de la IP. El código no guarda la IP cruda.
+El proveedor de alojamiento puede conservar sus propios registros operativos.
+
+La web no puede leer conversaciones privadas de Instagram. La comprobación
+manual y el registro de conversaciones anteriores son necesarios antes de
+preparar una propuesta; el historial solo protege los dispositivos a los que
+se haya transferido el respaldo actualizado. Nunca retomar una campaña en
+una agenda vacía ni una copia vieja que omita contactos o bajas recientes.
 
 ## Qué sale de la computadora
 

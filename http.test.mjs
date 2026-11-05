@@ -79,7 +79,7 @@ test('HTTP real: acceso, planilla grande, edición, limpieza, restauración y Ex
  const post=async(route,body={})=>{const r=await fetch(origin+'/api/'+route,{method:'POST',headers,body:JSON.stringify(body)});return {status:r.status,body:await r.json()};};
  const before=performance.now(),r=await fetch(origin+'/api/state',{headers:{cookie}}),state=await r.json();
  t.diagnostic(`Estado con 1200 clientes: ${Math.round(performance.now()-before)} ms`);
- assert.equal(state.leads.length,1200);assert.equal(state.build,'3.11.0');assert.equal(state.history.length,2);assert.equal(state.leads.find(l=>l.id===previousId).eventStatus,'contacted');assert.equal(state.counts.daily,1);
+ assert.equal(state.leads.length,1200);assert.equal(state.build,'3.12.0');assert.equal(state.history.length,2);assert.equal(state.leads.find(l=>l.id===previousId).eventStatus,'contacted');assert.equal(state.counts.daily,1);
  assert.equal((await fetch(origin+'/api/update',{method:'POST',headers:{cookie,'content-type':'application/json'},body:'{}'})).status,403);
  assert.equal((await fetch(origin+'/api/state',{headers:{cookie,origin:'https://example.com'}})).status,403);
  const id=state.leads.find(l=>!l.eventStatus).id;
@@ -92,6 +92,15 @@ test('HTTP real: acceso, planilla grande, edición, limpieza, restauración y Ex
  const cleared=await post('results/clear');assert.equal(cleared.body.archived,1198);assert.equal(cleared.body.state.leads.length,2);assert.equal(cleared.body.state.history.length,2);
  const restored=await post('results/restore');assert.equal(restored.body.state.leads.length,1200);assert.equal(restored.body.state.leads.find(l=>l.id===id).message,'Borrador QA conservado');
  const excel=await fetch(origin+'/api/excel',{headers:{cookie}});assert.equal(excel.status,200);const bytes=new Uint8Array(await excel.arrayBuffer());assert.deepEqual([...bytes.slice(0,2)],[80,75]);assert.match(unzip(Buffer.from(bytes)).get('xl/worksheets/sheet1.xml').toString(),/Conversación previa · sin nuevo envío/);
+ assert.equal((await post('add',{handle:'http_review_qa',name:'Comercio QA',source:'https://example.com',language:'es'})).status,200);
+ let manualState=(await post('settings',{})).body.state,manualId=manualState.leads.find(l=>l.handle==='http_review_qa').id;
+ await post('update',{id:manualId,message:'Propuesta revisada QA',qualificationReviewed:true,approved:true});
+ assert.equal((await post('manual',{id:manualId,confirm:true})).status,400,'el registro manual exige revisar primero el chat');
+ const checked=await post('contact-check',{id:manualId,reviewed:true});assert.equal(checked.status,200);assert.ok(checked.body.token);
+ await post('update',{id:manualId,message:'Otra propuesta QA',approved:true});
+ assert.equal((await post('manual',{id:manualId,confirm:true,token:checked.body.token})).status,400,'cambiar el texto invalida la revisión');
+ assert.equal((await post('contacted',{id:manualId,confirm:true})).status,200);
+ assert.equal((await post('contact-check',{id:manualId,reviewed:true})).status,400,'un contacto previo no permite otra propuesta');
  assert.equal((await post('logout')).status,200);assert.equal((await fetch(origin+'/api/state',{headers:{cookie}})).status,401);
  const attempt=password=>fetch(origin+'/api/login',{method:'POST',headers:{origin,'content-type':'application/json','x-csrf-token':session.csrf},body:JSON.stringify({name:'QA FICTICIO',password})});
  for(let i=0;i<4;i++){const failed=await attempt('incorrecta');assert.equal(failed.status,400);assert.equal(failed.headers.get('set-cookie'),null);}

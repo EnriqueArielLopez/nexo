@@ -1,0 +1,15 @@
+import assert from 'node:assert/strict';
+const base=process.argv[2]||'http://127.0.0.1:18795';let checks=0;
+const check=(condition,message)=>{assert.ok(condition,message);checks++;};
+const root=await fetch(base);check(root.ok,'La aplicación responde');check(root.headers.get('content-security-policy')?.includes("frame-ancestors 'none'"),'CSP y protección de marcos');check(root.headers.get('referrer-policy')==='no-referrer','Sin referencia a enlaces externos');const html=await root.text();check(html.includes('data-device="true"'),'Almacenamiento de dispositivo');check(!html.includes('codex-preview'),'Sin metadatos de prueba');
+const status=await(await fetch(base+'/api/search-status')).json();check(typeof status.enabled==='boolean'&&!JSON.stringify(status).includes('API_KEY'),'Configuración pública sin secretos');
+const body={countries:['AR'],cities:'Córdoba',segment:'Comercios en general',cursor:0};
+const post=(value,headers={})=>fetch(base+'/api/public-search',{method:'POST',headers:{'content-type':'application/json',origin:base,...headers},body:typeof value==='string'?value:JSON.stringify(value)});
+check((await fetch(base+'/api/public-search')).status===405,'Solo POST');
+check((await post(body,{origin:'https://sitio-ajeno.example'})).status===403,'Rechaza origen ajeno');
+check((await post(body,{'sec-fetch-site':'cross-site'})).status===403,'Rechaza petición entre sitios');
+check((await post(body,{'content-type':'text/plain'})).status===415,'Solo JSON');
+for(const value of [{...body,url:'http://127.0.0.1'}, {...body,cities:'https://127.0.0.1'}, {...body,cursor:-1},{...body,segment:'Inventado'}, {...body,countries:['ZZ']},'x'.repeat(4100)])check((await post(value)).status===400,'Valida filtros y límite de lectura');
+if(!status.enabled)check((await post(body)).status===503,'Sin API no inventa resultados ni consume consultas');
+for(const path of ['/api/state','/api/backup','/.env','/lib/public-search.ts'])check((await fetch(base+path)).status===404,'No expone agendas, configuración ni código privado: '+path);
+console.log(JSON.stringify({base,checks,searchEnabled:status.enabled}));

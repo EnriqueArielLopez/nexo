@@ -6,7 +6,7 @@ El ejecutable Windows inicia Node en loopback (`127.0.0.1:18761`) y abre la UI e
 La identidad persiste en `.installation-key`; los endpoints de control del
 lanzador y la extensión usan loopback sin compartir las cookies del navegador.
 Su icono de bandeja conserva el proceso cuando se cierra la ventana. Salir de
-Nexo detiene búsquedas y tandas después de la operación en curso. No hay servidor
+Nexo detiene búsquedas y tandas después de la operación en curso. La edición de Windows no necesita servidor
 en nube ni integración con Docker, Nginx, Login o RBAC de Practical Solutions.
 
 `server.mjs` coordina las cuentas locales, SQLite, búsqueda, proveedores y colas.
@@ -175,3 +175,24 @@ para una aplicación externa bajo el mismo usuario de Windows.
 Ver [SECURITY.md](../SECURITY.md), [PRIVACIDAD.md](../PRIVACIDAD.md) y
 [validación 3.11](VALIDACION-3.11.md). No modifica infraestructura de Practical
 Solutions ni requiere despliegue en Development/Producción.
+
+
+## Web y móvil 3.12
+
+`web/` contiene el proyecto Vinext/Workers para Sites. La identidad de alojamiento
+se conserva en `.openai/hosting.json`. No usa los servidores Development ni
+Producción de Practical Solutions: no modifica Compose, Nginx, DB ni copias envs.
+La URL pública corresponde al alojamiento Sites y se valida separadamente.
+
+`public/device-store.mjs` implementa agenda, exclusiones e historial en IndexedDB.
+`public/device-io.mjs` procesa JSON/CSV/XLSX localmente. `public/device.mjs`
+adapta las operaciones de la UI al almacenamiento local, sin interceptar fetch
+global. `contact-review.mjs` exige revisar el chat antes de copiar o registrar.
+`identity.mjs`, `business-sectors.mjs` y `prospect-policy.mjs` comparten los
+criterios de perfiles/rubros/geografía entre escritorio y web.
+
+Desde `web/`, `node scripts/sync-nexo.mjs ..` genera los recursos de la UI a partir
+del código canónico de la raíz. Los assets tienen revisión de contenido para
+actualizaciones y caché offline. El servidor no recibe contactos ni historial.
+Solo un futuro buscador integrado requiere D1 para cuotas, nunca para agendas.
+Sin claves servidor, la UI abre una búsqueda externa mediante un gesto del usuario.

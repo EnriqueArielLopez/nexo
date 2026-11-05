@@ -165,3 +165,11 @@ test('la memoria de conversaciones sobrevive al reinicio y a nuevas búsquedas',
   assert.throws(()=>store.reserve(item.id),/Ya contactado/);assert.equal(store.counts().daily,0);
  }finally{store.close();rmSync(dir,{recursive:true,force:true});}
 });
+
+for(const kind of ['previous','empty','unverified'])test('revisión previa de chat, solo lectura: '+kind,async()=>{
+ const f=fixture();try{const item=lead(f.store,'revision_qa'),ig=fakeInstagram({},kind==='previous'?{history:{revision_qa:'Mensaje anterior distinto de la propuesta'}}:kind==='unverified'?{snapshot:()=>({identity:false,ready:false,hasMessages:false,messages:[],text:''})}:{});
+ const sender=new InstagramSender(os.tmpdir(),{store:f.store,connect:async()=>ig.client,readFile:async()=>'9222\n/devtools/browser/abc',wait:async()=>{}});
+ const result=await sender.verifyConversation(item.id);assert.equal(result.status,{previous:'contacted',empty:'empty',unverified:'unverified'}[kind]);assert.ok(!ig.calls.some(([m])=>m.startsWith('Input.')),'revisar nunca escribe ni envía');
+ if(kind==='previous'){assert.equal(f.store.gate({...f.store.get(item.id),approved:1,qualification:''}),'Ya contactado');assert.equal(f.store.counts().daily,0);}
+ }finally{f.close();}
+});

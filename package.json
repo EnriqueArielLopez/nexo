@@ -1,11 +1,11 @@
 {
   "name": "nexo-clientes",
-  "version": "3.11.0",
+  "version": "3.12.0",
   "private": true,
   "type": "module",
   "scripts": {
     "start": "node --disable-warning=ExperimentalWarning server.mjs",
-    "test": "node --test test.mjs auth.test.mjs search.test.mjs web-discovery.test.mjs browser-search.test.mjs prospecting.test.mjs instagram-official.test.mjs instagram-sender.test.mjs extension-background.test.mjs reliability.test.mjs http.test.mjs security.test.mjs"
+    "test": "node --test test.mjs auth.test.mjs search.test.mjs web-discovery.test.mjs browser-search.test.mjs prospecting.test.mjs instagram-official.test.mjs instagram-sender.test.mjs extension-background.test.mjs reliability.test.mjs http.test.mjs security.test.mjs device.test.mjs"
   },
   "engines": {
     "node": ">=22.13"

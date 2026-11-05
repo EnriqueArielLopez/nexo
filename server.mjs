@@ -26,7 +26,7 @@ import {exportWorkbook} from './export-portable.mjs';
 import {NexoAssistant,campaignContext,connectionRequest} from './assistant.mjs';
 import {emailLead,sendMail,mailConfig,attachmentDir,ATTACHMENT_TYPES} from './mailer.mjs';
 import {runSchedules} from './scheduler.mjs';
-const BUILD='3.11.0';
+const BUILD='3.12.0';
 const root=path.dirname(fileURLToPath(import.meta.url));
 const data=path.resolve(process.env.HOTEL_DATA_DIR||path.join(root,'data'));
 const port=Number(process.env.PORT||18761),loopback=`http://127.0.0.1:${port}`;
@@ -60,7 +60,7 @@ async function runWebSearch(c,seed){
   c.store.setJob('lastSearch',{...c.search,seed,at:new Date().toISOString()});
   c.browserResume=()=>{c.browserResume=null;c.search={...c.search,status:'running',humanRequired:false,stage:'Revisando la verificación del buscador'};resume();};
  })});
- try{await discoverWeb({store:c.store,seed,web,inspect:c.store.settings().verifyActivity?h=>c.inspector.inspect(h):null,verifyActivity:c.store.settings().verifyActivity,maxQueries:c.store.settings().searchDepth==='deep'?900:40,rest:(ms=1200+Math.random()*1800)=>delay(ms,undefined,{signal:controller.signal}).catch(()=>{}),progress:next=>{cancel=cancel||c.search.cancel;c.search={...next,cancel};},cancelled:()=>stopping||cancel||!!c.search.cancel||controller.signal.aborted,save:()=>excel(c)});}
+ try{await discoverWeb({store:c.store,seed,web,inspect:c.store.settings().verifyActivity?h=>c.inspector.inspect(h):null,verifyActivity:c.store.settings().verifyActivity,maxQueries:c.store.settings().searchDepth==='deep'?900:40,timeBudgetMs:c.store.settings().searchDepth==='deep'?300000:90000,maxIdleQueries:c.store.settings().searchDepth==='deep'?18:8,rest:(ms=1200+Math.random()*1800)=>delay(ms,undefined,{signal:controller.signal}).catch(()=>{}),progress:next=>{cancel=cancel||c.search.cancel;c.search={...next,cancel};},cancelled:()=>stopping||cancel||!!c.search.cancel||controller.signal.aborted,save:()=>excel(c)});}
  finally{c.browserResume=null;if(c.webAbort===controller)c.webAbort=null;}
 }
 function cleanPending(c){
@@ -69,7 +69,7 @@ function cleanPending(c){
  if(!['running','waiting'].includes(c.queue.state.status)){c.queue.state={status:'idle',items:[],sent:0,skipped:0,reason:''};c.queue.persist();}
  const archived=c.store.archiveResults({keepIds:keep});void excel(c).catch(()=>{});return archived;
 }
-const staticFiles={'/':['nexo.html','text/html; charset=utf-8'],'/app.js':['nexo.js','text/javascript; charset=utf-8'],'/style.css':['nexo.css','text/css; charset=utf-8'],'/geography.js':['../geography.mjs','text/javascript; charset=utf-8'],...Object.fromEntries([400,500,600,700,800].map(w=>[`/fonts/Manrope-${w}.ttf`,[`fonts/Manrope-${w}.ttf`,'font/ttf']]))};
+const staticFiles={'/':['nexo.html','text/html; charset=utf-8'],'/contact-review.mjs':['contact-review.mjs','text/javascript; charset=utf-8'],'/app.js':['nexo.js','text/javascript; charset=utf-8'],'/style.css':['nexo.css','text/css; charset=utf-8'],'/business-sectors.mjs':['../business-sectors.mjs','text/javascript; charset=utf-8'],'/geography.js':['../geography.mjs','text/javascript; charset=utf-8'],...Object.fromEntries([400,500,600,700,800].map(w=>[`/fonts/Manrope-${w}.ttf`,[`fonts/Manrope-${w}.ttf`,'font/ttf']]))};
 const server=http.createServer({requestTimeout:20000,headersTimeout:10000,keepAliveTimeout:5000,maxHeaderSize:16384},async(req,res)=>{res.setHeader('Cache-Control','no-store');res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Referrer-Policy','no-referrer');res.setHeader('X-Frame-Options','DENY');res.setHeader('Content-Security-Policy',"default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' data:; frame-ancestors 'none'; base-uri 'none'; form-action 'self'; object-src 'none'");
 try{const route=new URL(req.url,origin).pathname;
  if(route.startsWith('/api/ext/')&&req.headers.host===`127.0.0.1:${port}`&&(!req.headers.origin||req.headers.origin.startsWith('chrome-extension://'))){// Nexo's extension in the user's Chrome, with its token.
@@ -96,7 +96,7 @@ try{const route=new URL(req.url,origin).pathname;
  if(route==='/api/register'||route==='/api/login'){const u=route==='/api/register'?accounts.create(v.name,v.password):accounts.login(v.name,v.password);res.setHeader('Set-Cookie',cookie(accounts.issue(u,v.remember!==false),v.remember!==false));return json(res,{ok:true,user:{id:u.id,name:u.name}});}
  if(!user)return json(res,{error:'Iniciá sesión para continuar.'},401);const c=await context(user);
  switch(route){
-  case '/api/logout':void c.officialInstagram.cancel();c.instagramTestPreview=null;c.search.cancel=true;c.webAbort?.abort();c.assistant.cancel();c.sender.stop();c.emails.stop();c.queue.pause();c.active=false;c.key='';c.ig=null;c.secret={};c.ready=null;accounts.revoke(req.headers.cookie);res.setHeader('Set-Cookie','nexo_session=; Max-Age=0; HttpOnly; SameSite=Strict; Path=/');return json(res,{ok:true});
+  case '/api/logout':c.manualReviews?.clear();void c.officialInstagram.cancel();c.instagramTestPreview=null;c.search.cancel=true;c.webAbort?.abort();c.assistant.cancel();c.sender.stop();c.emails.stop();c.queue.pause();c.active=false;c.key='';c.ig=null;c.secret={};c.ready=null;accounts.revoke(req.headers.cookie);res.setHeader('Set-Cookie','nexo_session=; Max-Age=0; HttpOnly; SameSite=Strict; Path=/');return json(res,{ok:true});
   case '/api/assistant/message':{if(!c.key)throw Error('Conectá Claude para usar el asistente.');const result=await c.assistant.run(v.text,{context:campaignContext({store:c.store,instagram:c.ig?.account,search:c.search,queue:c.queue.state})});return json(res,{...result,state:state(c)});}
   case '/api/assistant/approved':{if(!c.key)throw Error('Conectá Claude para continuar.');if(c.assistant.busy)throw Error('Pausá el pedido anterior antes de autorizar.');c.assistant.authorize(v.ids,v.confirm);const result=await c.assistant.run('Iniciá los envíos autorizados que acabo de revisar.',{authorized:true,context:campaignContext({store:c.store,instagram:c.ig?.account,search:c.search,queue:c.queue.state})});return json(res,{...result,state:state(c)});}
   case '/api/assistant/pause':c.assistant.cancel();c.sender.stop();c.emails.stop();break;
@@ -155,7 +155,10 @@ try{const route=new URL(req.url,origin).pathname;
   case '/api/add':{const result=c.store.add(v);if(result.added)c.store.setScore(result.id,v.score,v.score_reason);await excel(c);break;}
   case '/api/activity':c.store.setActivity(Number(v.id),{active:v.active===true,by:'user',note:v.active===true?'Marcada por vos: publica seguido':'Marcada por vos: poco activa'});if(v.active===true)c.store.update(Number(v.id),{approved:false});await excel(c);break;
   case '/api/update':c.store.update(Number(v.id),v);if(c.ig?.account&&'dnc'in v)budget.doNotContact(c.ig.account.id,c.store.get(Number(v.id)).handle,v.dnc===true);await excel(c);break;
-  case '/api/manual':{if(v.confirm!==true)throw Error('Confirmá que ya enviaste la propuesta.');const event=c.store.reserve(Number(v.id));c.store.finish(event.event,'sent','Confirmado manualmente');await excel(c);break;}
+  case '/api/contacted':{if(v.confirm!==true)throw Error('Confirmá que ya existe una conversación.');const lead=c.store.get(Number(v.id));if(!lead)throw Error('Negocio inexistente.');c.store.rememberContact(lead.id,'Conversación previa confirmada por vos');c.manualReviews?.delete(lead.id);await excel(c);break;}
+  case '/api/ig/check':{const result=extensions.bridge(c.user.id).connected()?await c.sender.verifyConversation(Number(v.id)):{status:'manual-required'};if(result.status==='empty'){const lead=c.store.get(Number(v.id));const token=randomBytes(24).toString('hex');(c.manualReviews??=new Map()).set(lead.id,{token,message:lead.message,until:Date.now()+300000});result.token=token;}return json(res,{...result,state:state(c)});}
+  case '/api/contact-check':{if(v.reviewed!==true)throw Error('Revisá la conversación antes de continuar.');const lead=c.store.get(Number(v.id));if(!lead)throw Error('Negocio inexistente.');const block=c.store.gate({...lead,approved:1});if(block)throw Error(block);const token=randomBytes(24).toString('hex');(c.manualReviews??=new Map()).set(lead.id,{token,message:lead.message,until:Date.now()+300000});return json(res,{token});}
+  case '/api/manual':{if(v.confirm!==true)throw Error('Confirmá que ya enviaste la propuesta.');const lead=c.store.get(Number(v.id)),review=c.manualReviews?.get(Number(v.id));if(!lead)throw Error('Negocio inexistente.');if(!lead.demo&&(!review||review.token!==v.token||review.until<Date.now()||review.message!==lead.message))throw Error('Volvé a revisar el chat antes de registrar el envío.');const event=c.store.reserve(lead.id);c.store.finish(event.event,'sent','Confirmado manualmente');c.manualReviews?.delete(lead.id);await excel(c);break;}
   case '/api/send':if(!c.ig)throw Error('Conectá Instagram.');await c.ig.send(c.store,Number(v.id));await excel(c);break;
   case '/api/queue/start':{if(v.reviewed===true){await startOfficialBatch({store:c.store,instagram:c.ig,budget,queue:c.queue,ids:v.ids,token:v.token,confirm:v.confirm});break;}if(!c.ig?.account)throw Error('Conectá Instagram para usar el envío automático oficial.');if(v.confirm!==true)throw Error('Revisá y confirmá las propuestas seleccionadas.');await c.ig.sync(c.store);if(!Array.isArray(v.ids)||v.ids.length>100)throw Error('La selección admite hasta 100 clientes.');for(const id of v.ids)c.store.update(Number(id),{approved:true});c.queue.start(v.ids);break;}
   case '/api/queue/pause':c.queue.pause();break;

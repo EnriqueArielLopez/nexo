@@ -13,14 +13,14 @@ if (Test-Path -LiteralPath $outputFull) { throw "El destino ya existe: $outputFu
 $appFolder=Join-Path $outputFull 'app'
 $binFolder=Join-Path $outputFull 'bin'
 New-Item -ItemType Directory -Path $appFolder,$binFolder | Out-Null
-foreach($name in @('server.mjs','core.mjs','geography.mjs','providers.mjs','export-portable.mjs','zip.mjs','package.json','auth.mjs','automation.mjs','imports.mjs','research.mjs','vault.mjs','qualification.mjs','assistant.mjs','campaign.mjs','web-discovery.mjs','browser-search.mjs','prospecting.mjs','website-prospects.mjs','templates.mjs','batches.mjs','instagram-connection.mjs','instagram-test.mjs','instagram-batch.mjs','mcp.mjs','conectar-claude.mjs','mailer.mjs','scheduler.mjs','instagram-sender.mjs','instagram-chat.mjs','extension-bridge.mjs','email-queue.mjs')) { Copy-Item -LiteralPath (Join-Path $PSScriptRoot $name) -Destination $appFolder }
+foreach($name in @('identity.mjs','prospect-policy.mjs','business-sectors.mjs','server.mjs','core.mjs','geography.mjs','providers.mjs','export-portable.mjs','zip.mjs','package.json','auth.mjs','automation.mjs','imports.mjs','research.mjs','vault.mjs','qualification.mjs','assistant.mjs','campaign.mjs','web-discovery.mjs','browser-search.mjs','prospecting.mjs','website-prospects.mjs','templates.mjs','batches.mjs','instagram-connection.mjs','instagram-test.mjs','instagram-batch.mjs','mcp.mjs','conectar-claude.mjs','mailer.mjs','scheduler.mjs','instagram-sender.mjs','instagram-chat.mjs','extension-bridge.mjs','email-queue.mjs')) { Copy-Item -LiteralPath (Join-Path $PSScriptRoot $name) -Destination $appFolder }
 if(Test-Path -LiteralPath (Join-Path $PSScriptRoot 'instagram-public-config.json')){Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'instagram-public-config.json') -Destination $appFolder}
 $instagramServiceFolder=Join-Path $outputFull 'servicio-instagram'
 New-Item -ItemType Directory -Path $instagramServiceFolder | Out-Null
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'instagram-oauth-service.mjs') -Destination $instagramServiceFolder
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'INSTAGRAM-OFICIAL.md') -Destination (Join-Path $instagramServiceFolder 'ACTIVAR-INSTAGRAM.md')
 New-Item -ItemType Directory -Path (Join-Path $appFolder 'public'),(Join-Path $appFolder 'assets') | Out-Null
-foreach($name in @('nexo.html','nexo.js','nexo.css')) { Copy-Item -LiteralPath (Join-Path $PSScriptRoot "public\$name") -Destination (Join-Path $appFolder 'public') }
+foreach($name in @('nexo.html','nexo.js','nexo.css','contact-review.mjs')) { Copy-Item -LiteralPath (Join-Path $PSScriptRoot "public\$name") -Destination (Join-Path $appFolder 'public') }
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'public\fonts') -Destination (Join-Path $appFolder 'public') -Recurse
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'chrome-extension') -Destination $appFolder -Recurse
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'assets\base.xlsx') -Destination (Join-Path $appFolder 'assets')
