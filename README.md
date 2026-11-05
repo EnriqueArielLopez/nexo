@@ -1,11 +1,29 @@
-# Nexo · Clientes 3.11.0
+# Nexo · Clientes 3.12.0
 
 Buscá negocios para tu oferta, revisá sus perfiles y prepará propuestas. Los envíos
 trabajan en segundo plano para que puedas seguir usando la computadora.
 
+## Usar desde el celular o la web
+
+Abrí [Nexo web](https://nexo-comercios-app.chalkycove20.chatgpt.site) desde un
+navegador actualizado. La agenda, propuestas, bajas e historial se guardan en
+**ese dispositivo**. No hay sincronización automática: usá **Guardar copia** e
+**Importar una planilla** para llevarlos a otro navegador o dispositivo.
+Borrar los datos del navegador elimina la agenda local; el respaldo no está cifrado.
+
+Sin API de búsqueda, la web abre una búsqueda externa con el rubro y la zona.
+Revisá los perfiles y tocá **Agregar un negocio**, o importá una planilla.
+No automatiza búsquedas externas ni lee chats privados. Antes de copiar una
+propuesta exige revisar Instagram: si hay mensajes, registrá **Ya hay mensajes**.
+Los envíos desde el celular son manuales y deben registrarse después de enviarlos.
+La app de Windows mantiene la búsqueda automatizada y sus conexiones opcionales.
+
+La web es una aplicación real con datos propios, no una demo. Los ejemplos
+ficticios solo se crean al elegir probarlos. [Detalles y desarrollo web](web/README.md).
+
 ## Descargar y empezar (Windows)
 
-1. Descargá [Nexo para Windows x64](https://github.com/EnriqueArielLopez/nexo/releases/download/v3.11.0/Nexo-Windows-portable.zip).
+1. Descargá [Nexo para Windows x64](https://github.com/EnriqueArielLopez/nexo/releases/download/v3.12.0/Nexo-Windows-portable.zip).
    También está en la [última versión](https://github.com/EnriqueArielLopez/nexo/releases/latest).
 2. Extraé todo el ZIP en una carpeta fija y abrí **Nexo.exe**.
 3. Creá tu cuenta local. Para buscar, completá tu Instagram, oferta y filtros.
@@ -18,11 +36,11 @@ incluye Node y sus licencias. No necesitás instalar Node, Python, Excel ni Clau
 El ejecutable aún no tiene firma digital. El archivo `.sha256` permite comprobar
 la descarga con `Get-FileHash -Algorithm SHA256`.
 
-![Nexo 3.10: cartera de clientes](docs/images/nexo-clientes.jpg)
+![Nexo 3.12: búsqueda de comercios](docs/images/nexo312-busqueda.jpg)
 
 *Vista de ejemplo con datos ficticios.*
 
-## Seguridad de 3.11
+## Seguridad
 
 Refuerza acceso local, contraseñas, archivos importados, SMTP, consultas de red y
 permisos de la extensión. El conector de Claude puede investigar y preparar;
@@ -30,11 +48,13 @@ los envíos de email y su programación se confirman desde Nexo. El conector ya 
 abre credenciales y exige elegir un espacio cuando hay varios.
 
 Leé [Seguridad](SECURITY.md), [Datos y uso responsable](PRIVACIDAD.md) y
-[Validación de 3.11](docs/VALIDACION-3.11.md). El programa reduce riesgos técnicos;
+[Validación de 3.12](docs/VALIDACION-3.12.md). El programa reduce riesgos técnicos;
 no certifica cumplimiento legal ni garantiza ausencia de incidentes.
 
 ## Funciones de la aplicación
 
+- **Comercios en general:** incluye tiendas, ferreterías, perfumerías, gastronomía y otros negocios con los mismos filtros de país, ciudad y oportunidad. La categoría de estrellas solo corresponde a alojamientos.
+- **Búsqueda acotada:** la búsqueda rápida tiene un presupuesto de tiempo y corta consultas consecutivas sin novedades; conserva resultados parciales y cursor para continuar.
 - **No repetir contactos:** además del historial de Nexo, comprueba si el chat del
   destinatario ya tiene mensajes, aunque el texto anterior sea diferente o sea
   una foto. Guarda la detección en **Enviados** como **Conversación previa**.

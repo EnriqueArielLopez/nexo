@@ -112,3 +112,10 @@ test('solo alojamientos: el nombre o la bio con habitaciones; que la bio diga «
  assert.equal(lodging(r('Lucía Fotos','luciafotos','Fotografía de bodas en hoteles de Salta')),false);
  assert.equal(webCandidate(r('Choferes Salta','choferes_salta','Traslados al hotel en Salta, Argentina. Reservas por WhatsApp.'),settings,profile),null);
 });
+
+test('búsqueda acotada: corta consultas sin novedades y conserva el cursor',async()=>{
+ const f=fixture();try{let calls=0;const web={calls:0,profile:async()=>profile,search:async()=>{calls++;return [];}};const state=await discoverWeb({store:f.store,seed:settings.lastSeed,web,maxIdleQueries:3});assert.equal(calls,3);assert.equal(state.stopReason,'sin-resultados-nuevos');assert.equal(state.status,'completed');assert.equal(f.store.job('searchCursor').next,3);}finally{f.close();}
+});
+test('búsqueda acotada: respeta presupuesto de tiempo antes de pedir más resultados',async()=>{
+ const f=fixture();try{let calls=0;const web={calls:0,profile:async()=>profile,search:async()=>{calls++;return [];}};const state=await discoverWeb({store:f.store,seed:settings.lastSeed,web,timeBudgetMs:0});assert.equal(calls,0);assert.equal(state.stopReason,'tiempo-acotado');}finally{f.close();}
+});

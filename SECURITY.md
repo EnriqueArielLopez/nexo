@@ -1,7 +1,7 @@
 # Seguridad de Nexo
 
-Usar la última versión publicada. La revisión del 4 de noviembre de 2026 cubre
-Nexo 3.11.0 para Windows x64, el servidor local, las importaciones, la extensión,
+Usar la última versión publicada. La revisión del 5 de noviembre de 2026 cubre
+Nexo 3.12.0 para Windows x64 y web, el servidor local, las importaciones, la extensión,
 el conector MCP y el empaquetado. No es una certificación ni garantiza ausencia
 de vulnerabilidades. No se ha auditado un despliegue público del servicio OAuth.
 
@@ -15,7 +15,7 @@ de destinatarios en issues. El canal no implica un plazo de respuesta garantizad
 ## Qué protege la aplicación
 
 - Solo escucha en `127.0.0.1`; rechaza Host y Origin ajenos. Las operaciones de la
-  web requieren sesión, JSON y token CSRF. El lanzador dispone de una capacidad
+  interfaz de Windows requieren sesión, JSON y token CSRF. El lanzador dispone de una capacidad
   de cierre privada, renovada en cada arranque y fuera del contenido web.
   Antes de abrir la UI verifica una prueba HMAC del servidor con un desafío
   aleatorio; declarar el nombre Nexo en el puerto local no alcanza. La clave
@@ -86,3 +86,40 @@ reemplaza. Actualizar las acciones fijadas a commits y Node LTS periódicamente.
 Referencias: [OWASP: contraseñas](https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html),
 [OWASP: SSRF](https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html),
 [OWASP: CSRF](https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html).
+
+
+## Web y móvil 3.12
+
+La web publica solo la interfaz y un endpoint acotado de búsqueda. La agenda no
+tiene un API remoto: CRUD, importación, respaldo y preparación ocurren en el
+navegador mediante IndexedDB con transacciones atómicas entre pestañas. El
+historial se indexa por cuenta normalizada; importar, archivar o cambiar la
+propuesta no elimina contactos previos. Los envíos inciertos permanecen bloqueados.
+
+CSP restringida al propio origen, recursos locales, sin scripts de terceros,
+marcos, objetos ni claves en el frontend. Los archivos se limitan por tamaño,
+filas, columnas y profundidad XML; ZIP valida tamaños reales, CRC y rutas.
+CSV neutraliza fórmulas al exportar. Los nombres y textos de contactos se
+insertan con escape o textContent. El service worker solo guarda recursos
+propios y excluye todas las rutas /api/.
+
+La búsqueda integrada queda deshabilitada sin credenciales del servidor. Solo
+acepta parámetros cerrados de países, ciudad, rubros y cursor; rechaza origen
+ajeno, URLs arbitrarias y cuerpos grandes. Credenciales futuras solo como
+variables de entorno del servidor BRAVE_SEARCH_API_KEY o SERPER_API_KEY,
+nunca NEXT_PUBLIC_*, claves del usuario en la UI ni archivos versionados.
+Cuota mensual de 500 solicitudes sin caché (máximo dos consultas por solicitud),
+además de los límites por visitante y hora; estos topes no sustituyen controles
+de facturación en el proveedor. No se sortea CAPTCHA ni se scrapean fuentes
+que no autoricen este uso. La búsqueda externa es iniciada por la persona.
+
+La web no verifica chats privados automáticamente ni envía mensajes. Exige
+una revisión manual explícita antes de copiar y un registro explícito después
+del envío. En Windows, la revisión previa automática es de solo lectura;
+la revisión caduca y cambiar el texto invalida la autorización para registrarlo.
+Estas comprobaciones no impiden que alguien mienta en una confirmación manual
+ni protegen agendas separadas que no hayan recibido el último historial.
+
+El almacenamiento del navegador y los respaldos no están cifrados por Nexo;
+proteger el dispositivo y sus copias. No declarar que estos controles evitan
+todos los incidentes, bloqueos de proveedores o reclamos legales.

@@ -1,3 +1,4 @@
+import {lodgingOnly} from './business-sectors.mjs';
 // Sends the Instagram batch from a window of the user's Chrome (through Nexo's extension) or from Nexo's own Chrome window,
 // signed in to the user's account: one chat at a time,
 // with a 20-40 s pause between sends. Before each send it reads the real profile (name and last posts) and skips
@@ -126,6 +127,15 @@ export class InstagramSender {
   this.state.status=this.cancel?'paused':'done';this.state.current='';this.state.message=this.cancel?`Detenido: ${this.state.sent} enviados.`:`Listo: ${this.state.sent} enviados${this.state.skipped?`, ${this.state.skipped} salteados`:''}.`;this.emit();
  }
  // One account: checks, then sends. Returns true only when the message shows up as sent in the chat.
+ async verifyConversation(id){
+  if(this.active)throw Error('Detené la tanda en curso antes de revisar otro chat.');
+  const lead=this.store.get(Number(id));if(!lead)throw Error('Negocio inexistente.');
+  const block=this.store.gate({...lead,approved:1,qualification:''},new Date());if(block)throw Error(block);
+  return this.exclusive(async()=>{await this.ensure();if(!(await this.loggedIn()))return {status:'manual-required'};await this.minimize();await this.go(`https://ig.me/m/${lead.handle}`);let previous='',stable=0;
+   for(let i=0;i<25;i++){await this.delay(400);const chat=await this.chat(lead.handle);if(WARNING.test(chat.text))throw Error('Instagram pidió una revisión. No se preparó ningún mensaje.');if(chat.identity&&chat.hasMessages){this.store.rememberContact(lead.id);await this.saveExcel().catch(()=>{});return {status:'contacted'};}const box=await this.box(),signature=JSON.stringify([chat.identity,chat.ready,chat.messages,chat.text]);stable=signature===previous?stable+1:0;previous=signature;if(chat.identity&&chat.ready&&box&&stable>=4)return {status:'empty'};}
+   return {status:'unverified'};
+  });
+ }
  async one(item){
   const store=this.store,lead=store.get(item.id);
   const block=lead&&store.gate({...lead,approved:1,qualification:''},new Date());
@@ -136,7 +146,7 @@ export class InstagramSender {
   const p=fresh?{title:lead.name,dates:null}:await this.read(item.handle);
   if(p.warning)throw Object.assign(Error('Instagram mostró un aviso. Se pausó la tanda: revisá la ventana de Nexo antes de seguir.'),{stopBatch:true});
   if(p.missing){store.update(item.id,{dnc:true});this.log(item,'skipped','La cuenta ya no existe');return false;}
-  if(/hotel|resort|posada|hostal|apart/i.test(store.settings().segment)&&otherTrade({title:p.title,url:`https://www.instagram.com/${item.handle}/`})){store.update(item.id,{dnc:true});this.log(item,'skipped','No es un alojamiento: '+p.title.slice(0,60));return false;}
+  if(lodgingOnly(store.settings().segment)&&otherTrade({title:p.title,url:`https://www.instagram.com/${item.handle}/`})){store.update(item.id,{dnc:true});this.log(item,'skipped','No es un alojamiento: '+p.title.slice(0,60));return false;}
   if(p.dates){const a=store.setActivity(item.id,{dates:p.dates,source:'profile',note:'Revisado por Nexo antes de enviar'});if(a.verdict==='active'){store.update(item.id,{approved:false});this.log(item,'skipped',`Publica seguido (${a.weeks} de ${a.span} semanas)`);return false;}}
   else{let checked=false;try{checked=['profile','user'].includes(JSON.parse(lead.activity||'{}').source);}catch{}if(!checked){this.log(item,'skipped','No se pudieron leer sus publicaciones');return false;}}
   this.state.message=`Escribiendo a @${item.handle}`;this.emit();

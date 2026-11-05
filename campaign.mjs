@@ -1,5 +1,5 @@
 import {COUNTRIES} from './geography.mjs';
-import {handle} from './core.mjs';
+import {handle} from './identity.mjs';
 const norm=v=>String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLowerCase();
 export function inCountries(country,settings){
  if(!settings.countries?.length)return true;

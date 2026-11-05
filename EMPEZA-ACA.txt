@@ -1,4 +1,4 @@
-NEXO · CLIENTES 3.11.0
+NEXO · CLIENTES 3.12.0
 
 INSTALAR EN WINDOWS
 1. Descargá Nexo-Windows-portable.zip desde:
@@ -111,3 +111,19 @@ Abrí Nexo desde Nexo.exe: la dirección nexo-<identidad>.localhost es local
 y propia de tu instalación. No usa un servidor en Internet. Después de
 actualizar puede pedirte ingresar de nuevo; luego conserva la sesión según
 tu elección. No compartas .installation-key ni .shutdown-token.
+
+
+DESDE EL CELULAR O LA WEB
+Abrí https://nexo-comercios-app.chalkycove20.chatgpt.site
+La agenda se guarda en ese navegador. No hay sincronización automática.
+Usá Guardar copia y luego Importar una planilla en el otro dispositivo.
+Borrar los datos del navegador elimina esa agenda; conservá una copia privada.
+Sin API, la búsqueda abre el buscador externo: revisá los perfiles y usá
+Agregar un negocio. No realiza búsquedas automáticas ni envíos desde la web.
+Antes de copiar una propuesta, revisá el chat de Instagram. Si ya hay
+mensajes, registrá esa conversación para bloquear el contacto. Si no hay,
+podés copiar, enviar manualmente en Instagram y recién después registrarlo.
+
+COMERCIOS EN GENERAL
+Elegí ese rubro para buscar negocios de distintos tipos. Los hoteles siguen
+como opción independiente. La categoría de estrellas solo se usa en alojamientos.

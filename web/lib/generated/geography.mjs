@@ -1,0 +1,4 @@
+export const COUNTRIES = [
+ ['AR','Argentina','latam'],['BO','Bolivia','latam'],['CL','Chile','latam'],['CO','Colombia','latam'],['CR','Costa Rica','latam'],['CU','Cuba','latam'],['EC','Ecuador','latam'],['SV','El Salvador','latam'],['ES','España','europe'],['GT','Guatemala','latam'],['GQ','Guinea Ecuatorial','africa'],['HN','Honduras','latam'],['MX','México','latam'],['NI','Nicaragua','latam'],['PA','Panamá','latam'],['PY','Paraguay','latam'],['PE','Perú','latam'],['PR','Puerto Rico','latam'],['DO','República Dominicana','latam'],['UY','Uruguay','latam'],['VE','Venezuela','latam']
+].map(([code,name,region])=>({code,name,region}));
+export const SEGMENTS=['Hoteles','Hoteles boutique','Resorts','Posadas','Apart hoteles','Hostales','Gastronomía','Cafeterías','Indumentaria','Estética y belleza','Gimnasios','Inmobiliarias','Turismo','Salud','Comercios en general'];
