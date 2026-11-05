@@ -54,16 +54,39 @@ hardware Android/iOS. El navegador puede borrar almacenamiento. Los respaldos
 no están cifrados. Estos controles no certifican ausencia de vulnerabilidades ni
 cumplimiento legal de campañas. Continúan los límites documentados en SECURITY.md.
 
-## Publicación y pendientes
+## Publicación y cierre
 
-Validación local completada: portable candidato con Node incluido, dos smokes
-HTTP sin fallos. Web publicada el 5 de noviembre de 2026 en
-https://nexo-comercios-app.chalkycove20.chatgpt.site, versión 1 de Sites,
-fuente main `e6ce45b1eb5626b84bab2883deb8b35c463d9ee1`. Archivo de publicación
-SHA256 `ff2ed3dbaffe0221a473e6510530905d16dbd5a0944cefecc515149c874d7c94`.
-Smoke externo propio: 21 comprobaciones HTTP sin fallos; acceso público móvil
-sin login de Nexo y agenda inicial vacía verificados en navegador.
-No contiene agendas ni claves. En preparación: fuente GitHub por PR y paquete
-final desde main. Esta sección se
-actualiza con los resultados reales antes del cierre. Las plantillas de CI y
-CodeQL siguen preparadas, sin activar por falta del permiso workflow.
+- PR [#7](https://github.com/EnriqueArielLopez/nexo/pull/7) integrado a main.
+  Código distribuido: `c5d3f2f166a7bfeb7c16e27f566b4933e5e1e443`;
+  tag `v3.12.0`. Main revalidado con Node 24.22.2: 146 pruebas sin fallos.
+- [Release pública](https://github.com/EnriqueArielLopez/nexo/releases/tag/v3.12.0)
+  publicada el 5 de noviembre de 2026 y marcada como última versión.
+  ZIP de 36.591.550 bytes, 58 archivos; 48 archivos de app comparados con
+  las fuentes de main. Runtime incluido contrastado con el binario preparado.
+- Descarga anónima completa del ZIP y del checksum desde GitHub, iguales al
+  paquete probado. SHA256:
+  `adc86751c3d170bf4f9009b943baa99ae058822ddbb149d71932dd1202c27446`.
+- Portable definitivo: dos smokes HTTP correctos con su Node incluido, recursos
+  de inicio de la UI accesibles y estado de 1200 clientes leído en 93 ms en
+  esta PC. No extrapolar ese tiempo a hardware móvil o a consultas de red.
+- Web pública: https://nexo-comercios-app.chalkycove20.chatgpt.site,
+  versión 1 de Sites, fuente main
+  `e6ce45b1eb5626b84bab2883deb8b35c463d9ee1`. Archivo de publicación SHA256
+  `ff2ed3dbaffe0221a473e6510530905d16dbd5a0944cefecc515149c874d7c94`.
+  21 comprobaciones externas propias sin fallos. Acceso sin login de Nexo,
+  agenda inicial vacía y filtros de país/ciudad/comercio verificados en la UI.
+- Rama feature local y remota `codex/nexo-comercios-experiencia` eliminada
+  después del merge y de validar main. Checkout del alojamiento conservado
+  en main para mantenimiento. Instancias locales y pestañas propias de QA
+  cerradas; queda abierta la web publicada como resultado.
+- README, EMPEZA-ACA, arquitectura, seguridad y privacidad actualizados.
+  No se tocaron servidores, envs ni repos operativos de Practical Solutions.
+
+Pendientes y límites: CI/CodeQL siguen como plantillas, sin activar porque la
+credencial con escritura no tiene el permiso workflow. La otra credencial
+visible solo tiene lectura sobre este repo; no se cambió de cuenta ni se
+ampliaron permisos. La búsqueda integrada web continúa deshabilitada por falta
+de API autorizada, según confirmó el usuario. El envío real con su Instagram,
+Android/iOS físico y la firma digital de Windows no quedaron verificados o
+resueltos; la comprobación manual, los respaldos y los avisos de privacidad
+siguen siendo necesarios. No hay garantía de ausencia de incidentes o reclamos.
