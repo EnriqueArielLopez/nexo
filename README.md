@@ -21,6 +21,13 @@ La app de Windows mantiene la búsqueda automatizada y sus conexiones opcionales
 La web es una aplicación real con datos propios, no una demo. Los ejemplos
 ficticios solo se crean al elegir probarlos. [Detalles y desarrollo web](web/README.md).
 
+## Si vas a cambiar de PC o celular
+
+La aplicación y sus fuentes quedan en GitHub; no dependen de esta PC.
+Para conservar contactos, bajas e historial, trasladá un respaldo JSON privado
+antes de dejar el equipo. No lo publiques en este repositorio.
+[Guía para cambiar de equipo, recuperar datos y ubicar todos los archivos](docs/CAMBIAR-DE-EQUIPO.md).
+
 ## Descargar y empezar (Windows)
 
 1. Descargá [Nexo para Windows x64](https://github.com/EnriqueArielLopez/nexo/releases/download/v3.12.0/Nexo-Windows-portable.zip).

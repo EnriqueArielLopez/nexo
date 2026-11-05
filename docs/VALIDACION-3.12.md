@@ -71,7 +71,7 @@ cumplimiento legal de campañas. Continúan los límites documentados en SECURIT
   esta PC. No extrapolar ese tiempo a hardware móvil o a consultas de red.
 - Web pública: https://nexo-comercios-app.chalkycove20.chatgpt.site,
   versión 1 de Sites, fuente main
-  `e6ce45b1eb5626b84bab2883deb8b35c463d9ee1`. Archivo de publicación SHA256
+  `e6ce45b1eb5626b84bab2883deb8b35c463d9ee1`. Archivo normalizado por el alojamiento SHA256
   `ff2ed3dbaffe0221a473e6510530905d16dbd5a0944cefecc515149c874d7c94`.
   21 comprobaciones externas propias sin fallos. Acceso sin login de Nexo,
   agenda inicial vacía y filtros de país/ciudad/comercio verificados en la UI.
@@ -90,3 +90,24 @@ de API autorizada, según confirmó el usuario. El envío real con su Instagram,
 Android/iOS físico y la firma digital de Windows no quedaron verificados o
 resueltos; la comprobación manual, los respaldos y los avisos de privacidad
 siguen siendo necesarios. No hay garantía de ausencia de incidentes o reclamos.
+
+
+## Entrega independiente de esta PC
+
+El 5 de noviembre de 2026 se añadieron a la release pública el paquete web
+comprimido generado desde la fuente desplegada y su checksum. Paquete de
+2.142.589 bytes, 155 archivos revisados; sin rutas de datos ni coincidencias de
+credenciales en los patrones comprobados. SHA256 del .tar.gz descargable:
+`08a19087f79d0a0e640f2da22ba308fbb5141c5a56a63901d6ed2d4d7949f46b`.
+El manifiesto de alojamiento se compara semánticamente porque el empaquetado
+normaliza su formato. El hash del artefacto normalizado de Sites documentado
+arriba es distinto del hash de este archivo comprimido descargable.
+
+La guía CAMBIAR-DE-EQUIPO.md y las capturas web/móvil se versionan en GitHub.
+No se publican respaldos personales, bases, sesiones, credenciales ni archivos
+locales de QA. Esta ampliación de la entrega solo agrega documentación y el
+artefacto web ya construido; el código de la aplicación permanece en 3.12.0.
+
+Descarga anónima del paquete web desde GitHub verificada: 2.142.589 bytes y
+checksum iguales al artefacto revisado. Ambos paquetes públicos están
+disponibles sin depender de archivos locales de esta PC.
